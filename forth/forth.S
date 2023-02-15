@@ -41,4 +41,10 @@ list:
 	.word tick
 	.word tick
 	.word tick
+	.word tick
+	.word tick
+	.word tick
+	.word tick
+	.word tick
+	
 	.word 0
