@@ -10,8 +10,10 @@
 
 #// to create the built in words
 
+	// flags are not used yet
+	
 	#define FLAG_ASSEMBLER 0	
-	#define FLAG_FORTH     1
+	#define FLAG_INVISIBLE 1
 	
 	.set link,0
 	
@@ -149,15 +151,6 @@ wordsloop:
 	bl printf
 	DONE
 
-	# -------------	
-
-	HEADER .,1,0,DOT
-	KPOP
-	mov r1,r0
-	ldr r0,=numberstring
-	bl printf
-	DONE
-
 	# --------------
 	# read a constant from the list of function calls
 	
@@ -225,11 +218,60 @@ wordsloop:
 
 	# -------- end arithmetics -------
 
-	# duplicate a number on the stack
+
+
+	# ------- stack manipulation -------
+	
 	HEADER DUP,3,0,DUP
 	KPOP
 	KPUSH
 	KPUSH
+	DONE
+
+	HEADER SWAP,4,0,SWAP
+	KPOP
+	mov r1,r0
+	KPOP
+	mov r2,r0
+	mov r0,r1
+	KPUSH
+	mov r0,r2
+	KPUSH
+	DONE
+
+	HEADER OVER,4,0,OVER
+	bl forthword
+	.word SWAP, DUP, ROT, SWAP
+	.word 0
+	
+	HEADER DROP,4,0,DROP
+	KPOP
+	DONE
+
+	HEADER ROT,3,0,ROT
+	KPOP
+	mov r1,r0
+	KPOP
+	mov r2,r0
+	KPOP
+	mov r3,r0
+	mv r0,r2
+	KPUSH
+	mov r0,r1
+	KPUSH
+	mov r0,r3
+	KPUSH
+	DONE
+	
+	
+	
+	# ------ output -------	
+
+	HEADER .,1,0,DOT
+	KPOP
+	mov r1,r0
+	ldr r0,=numberstring
+	bl printf
 	DONE
 
 	# print a char from ascii on the stack
@@ -238,6 +280,11 @@ wordsloop:
 	bl putchar
 	DONE
 
+	# ---------------
+
+
+	
+	
 	// called if a word is written in forth
 forthword:	
 	// r14 contains the pointer to the list of pointers to words
@@ -267,6 +314,7 @@ list:
 	.word LIT, 7, LIT, 3,DUP,LIT,1,DOT,DOT,DOT,DOT,10,EMIT
 	.word 0
 
+	
 
 	###
 	##	strings
