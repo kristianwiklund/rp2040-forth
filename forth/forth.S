@@ -10,6 +10,9 @@
 
 #// to create the built in words
 
+	#define FLAG_ASSEMBLER 0	
+	#define FLAG_FORTH     1
+	
 	.set link,0
 	
 	.macro HEADER word, wordlen, flags, label
@@ -26,7 +29,9 @@ word_\label:
 \label:
 	.endm
 
-
+	#define	OFFSET_FLAGS (header_WORDS-next_WORDS)
+	
+	#define OFFSET_CODE  (WORDS-next_WORDS)
 	
 main:
 	mov r7, #0
@@ -40,6 +45,9 @@ main:
 	ldr r1,=list
 	str r1,[r0]
 
+	ldr r0,=0
+	push {r0} // end of input exec marker
+
 done:
 	// execute the next word in the list, unless we are done executing words in the list
 	ldr r0, =wordptr
@@ -50,10 +58,20 @@ done:
 	str r1,[r0]
 	ldr r1,[r2]
 	cmp r1, #0
-	beq loop // end of the list, simply freeze for now, later escape back to the prompt
-	
+	beq loop // end of the list, simply freeze for now, later handle "up one" or "escape to prompt"
+
 	mov pc,r1 // jump to the next word in the list
 loop:
+	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt	
+	pop {r0}
+	cmp r0,#0
+	beq reallydone
+
+	ldr r1,=wordptr
+	str r0,[r1]
+	b done
+	
+reallydone:	
 	ldr r0, =donemsg
 	bl printf
 bloop:	
@@ -220,14 +238,34 @@ wordsloop:
 	bl putchar
 	DONE
 
+	// called if a word is written in forth
+forthword:	
+	// r14 contains the pointer to the list of pointers to words
+	ldr r0,=wordptr
+	ldr r1,[r0]
+	push {r1}
+	mov r1, r14
+	sub r1, #1     // because $REASONS
+	str r1,[r0]
+	str r1,[r0]
+	
+	DONE
+	
+	
 	# demo word written in Forth
-	HEADER DEMO,4,1,DEMO
+	HEADER DEMO,4,0,DEMO
+	bl forthword				// this calls the forth word setup thing, and pushes "t" to r14
+t:
 	.word LIT, 15, LIT, 10, STAR, DUP, DOT, LIT, 5, SLASH, LIT, 32, EMIT, DOT
 	.word LIT, 10, EMIT, WORDS
 	.word 0
 	
 	.align 4		
 list:
+	.word DEMO
+	.word LIT, 10, EMIT
+	.word LIT, 7, LIT, 3,DUP,LIT,1,DOT,DOT,DOT,DOT,10,EMIT
+	.word 0
 
 
 	###
@@ -247,6 +285,9 @@ numberstring:
 	.align 4
 wordptr:
 	.word 0
+dbw:
+	.word 0
+	
 firstword:
 	.word link
 
