@@ -321,8 +321,9 @@ wordsloop:
 
 	HEADER WORD,4,0,WORD
 	// read from input buffer until space, enter, or zero is found.
-	// store the data at "HERE"
-	// this is broken right now, need to store the input length as the first "int" before the string!
+	// store the data at "HERE", leading with an integer (4 bytes) containing the number of bytes in the word
+	// this does not ensure that we are at an aligned boundary. Write a helper that secures that "freemem"
+	// is bumped to an aligned space
 	// load the pointer to the buffer
 	ldr r3,=input
 	ldr r0,[r3]
@@ -370,6 +371,7 @@ wc2:
 	//pop {r0}
 	b wc1
 wcend:
+
 	DONE
 	
 	
