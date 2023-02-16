@@ -3,17 +3,16 @@
 	
 	.thumb_func
 	.global main
-
+	.cpu cortex-m0
+	
 	.macro DONE
 	b done
+	.ltorg  // allow a literal pool here
 	.endm
 
 #// to create the built in words
 
 	// flags are not used yet
-	
-	#define FLAG_ASSEMBLER 0	
-	#define FLAG_INVISIBLE 1
 	
 	.set link,0
 	
@@ -23,22 +22,28 @@ next_\label:
 	.int link
 	.set link, next_\label
 header_\label:		
-	.byte \flags
-	.byte \wordlen
+	.int \wordlen+\flags
 word_\label:
 	.asciz "\word"
 	.align 4
 \label:
+	ldr r0, =debugstring
+	ldr r1, =word_\label
+	bl printf
 	.endm
 
-	#define	OFFSET_FLAGS (header_WORDS-next_WORDS)
+	.macro FHEADER word, wordlen, flags, label
+	HEADER \word, \wordlen, \flags, \label
+	bl forthword
+	.endm
 	
+	#define	OFFSET_FLAGS (header_WORDS-next_WORDS)
 	#define OFFSET_CODE  (WORDS-next_WORDS)
+	#define OFFSET_NAME  (word_WORDS-next_WORDS)
 	
 main:
 	mov r7, #0
 	bl stdio_init_all
-
 	ldr r0, =hellogoodmorning
 	bl printf
 		
@@ -56,12 +61,12 @@ done:
 	ldr r1,[r0]
 	mov r2,r1
 
-	add r1,#4
+	add r1,#4   // increase the pointer one step
 	str r1,[r0]
 	ldr r1,[r2]
 	cmp r1, #0
 	beq loop // end of the list, simply freeze for now, later handle "up one" or "escape to prompt"
-
+	
 	mov pc,r1 // jump to the next word in the list
 loop:
 	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt	
@@ -79,6 +84,18 @@ reallydone:
 bloop:	
 	b bloop
 
+	###
+	##	strings
+	
+hellogoodmorning:	
+	.asciz "\n\n\nWelcome!\n\n"
+donemsg:
+	.asciz "\nDone!\n"
+numberstring:
+	.asciz "%d"
+debugstring:
+	.asciz "<%s>"
+	
 	# -------------
 	# a couple of test words
 
@@ -95,8 +112,6 @@ bloop:
 	ldr r0, =word_TOCK
 	bl printf
 	DONE
-
-	
 
 	# utility macros to move things on and off the value stack
 	# both operate on r0
@@ -129,7 +144,7 @@ wordsloop:
 	push {r0}
 	pop {r0}
 
-	add r0,#6	   // the word name starts 6 bytes in
+	add r0,#OFFSET_NAME	   
 	bl printf	   // print the word
 	
 	ldr r0,=' '        // then print a space
@@ -198,7 +213,7 @@ wordsloop:
 
 	# divide...
 	# using the hardware divider
-	HEADER /,1,0,SLASH
+	HEADER /MOD,4,0,DIVMOD
 	ldr r3,=SIO_BASE
 	KPOP
 	str r0, [r3, #SIO_DIV_SDIVISOR_OFFSET]
@@ -212,9 +227,18 @@ wordsloop:
 1: 	b 1f
 1: 	b 1f
 1:
+	ldr r0, [r3, #SIO_DIV_REMAINDER_OFFSET]
+	KPUSH
 	ldr r0, [r3, #SIO_DIV_QUOTIENT_OFFSET]
 	KPUSH
 	DONE
+
+	FHEADER /,1,0,SLASH
+	.word DIVMOD, SWAP, DROP, 0
+
+	FHEADER MOD,3,0,MOD	
+	.word DIVMOD, DROP, 0
+	
 
 	# -------- end arithmetics -------
 
@@ -239,8 +263,7 @@ wordsloop:
 	KPUSH
 	DONE
 
-	HEADER OVER,4,0,OVER
-	bl forthword
+	FHEADER OVER,4,0,OVER
 	.word SWAP, DUP, ROT, SWAP
 	.word 0
 	
@@ -255,7 +278,7 @@ wordsloop:
 	mov r2,r0
 	KPOP
 	mov r3,r0
-	mv r0,r2
+	mov r0 ,r2
 	KPUSH
 	mov r0,r1
 	KPUSH
@@ -280,13 +303,83 @@ wordsloop:
 	bl putchar
 	DONE
 
-	# ---------------
+	FHEADER CR,2,0,CR
+	.word LIT,10,EMIT,0
 
+	FHEADER SPACE,5,0,SPACE
+	.word LIT,32,EMIT,0
 
+	# ------ memory manipulation ---------
+
+	HEADER HERE,4,0,HERE
+	ldr r0,=freemem
+	ldr r0,[r0]
+	KPUSH
+	DONE
+
+	# input handling
+
+	HEADER WORD,4,0,WORD
+	// read from input buffer until space, enter, or zero is found.
+	// store the data at "HERE"
+	// this is broken right now, need to store the input length as the first "int" before the string!
+	// load the pointer to the buffer
+	ldr r3,=input
+	ldr r0,[r3]
+	// check for NULL pointer, return if we are NULL
+	cmp r0,#0
+	bne wc0
+	DONE
+wc0:	
+	// allocate an integer at the start of the free memory area
+	ldr r1,=freemem
+	ldr r5,[r1]
+	ldr r2, =0
+	str r2, [r5] // set zero length
+	mov r2,r5
+	add r2,#(endstack-stacktop)
+	str r2,[r1]	// freemem is now at the beginning of where the chars should go
+wc1:
+	ldrb r4,[r0]     // read the input character (a byte) from the buffer
+	add r0, #1	// increase the pointer
+	str r0, [r3]	// and store it back to memory to indicate that we have moved the buffer pointer
+	// then check if we are at the end of the word or not
+	cmp r4,#0
+	beq wcend
+	cmp r4, #' '
+	beq wcend
+	cmp r4, #'\n'
+	beq wcend
+wc2:
+	// save the retrieved character somewhere
+	ldr r1,=freemem  // get the 
+	ldr r2,[r1]      // address to the first free byte
+	strb r4,[r2]      // store the character there
+	add r2,#1        // bump the memory pointer
+	str r2,[r1]      // and store it back to freemem
+	// increment the counter at memstart
+	ldr r4,[r5]
+	add r4,#1
+	str r4,[r5]
+	// debug, print the character
+	//	push {r0}
+	//mov r0,r4
+	//bl putchar
+	//ldr r0,=' '
+	//bl putchar
+	//pop {r0}
+	b wc1
+wcend:
+	DONE
+	
+	
+
+hexnumber:
+	.asciz "%x\n"
 	
 	
 	// called if a word is written in forth
-forthword:	
+forthword:
 	// r14 contains the pointer to the list of pointers to words
 	ldr r0,=wordptr
 	ldr r1,[r0]
@@ -294,37 +387,16 @@ forthword:
 	mov r1, r14
 	sub r1, #1     // because $REASONS
 	str r1,[r0]
-	str r1,[r0]
-	
 	DONE
-	
-	
-	# demo word written in Forth
-	HEADER DEMO,4,0,DEMO
-	bl forthword				// this calls the forth word setup thing, and pushes "t" to r14
-t:
-	.word LIT, 15, LIT, 10, STAR, DUP, DOT, LIT, 5, SLASH, LIT, 32, EMIT, DOT
-	.word LIT, 10, EMIT, WORDS
-	.word 0
-	
+		
 	.align 4		
 list:
-	.word DEMO
-	.word LIT, 10, EMIT
-	.word LIT, 7, LIT, 3,DUP,LIT,1,DOT,DOT,DOT,DOT,10,EMIT
+	.word WORDS,HERE,DOT,SPACE,CR
+	.word WORD
+	.word HERE,DOT,SPACE,CR
 	.word 0
-
 	
 
-	###
-	##	strings
-	
-hellogoodmorning:	
-	.asciz "\n\n\nWelcome!\n\n"
-donemsg:
-	.asciz "\nDone!\n"
-numberstring:
-	.asciz "%d"
 
 	###
 	## variables
@@ -335,6 +407,13 @@ wordptr:
 	.word 0
 dbw:
 	.word 0
+input:
+	.word buffer
+buffer:
+	.asciz "XYZZY 10 5 DIV DOT"
+	.align 4
+freemem:
+	.word endstack
 	
 firstword:
 	.word link
@@ -349,4 +428,9 @@ stackbottom:
 	.endr
 stacktop:
 	.int 0
-endstack:	
+endstack:
+	.align 4
+heap:
+	.rept 2000
+	.int 0
+	.endr

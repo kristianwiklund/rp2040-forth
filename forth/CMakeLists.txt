@@ -3,6 +3,7 @@ include(pico_sdk_import.cmake)
 project(forth_project C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+add_compile_options(-ffunction-sections)
 pico_sdk_init()
 add_executable(forth
 forth.S
