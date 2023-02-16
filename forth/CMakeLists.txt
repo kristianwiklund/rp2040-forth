@@ -9,4 +9,4 @@ forth.S
 )
 pico_enable_stdio_uart(forth 1)
 pico_add_extra_outputs(forth)
-target_link_libraries(forth pico_stdlib)
+target_link_libraries(forth pico_stdlib pico_bootsel_via_double_reset)
