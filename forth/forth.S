@@ -34,6 +34,9 @@ word_\label:
 //	bl printf
 	.endm
 
+//goff:	
+//	blx main
+	
 	.macro FHEADER word, wordlen, flags, label
 	HEADER \word, \wordlen, \flags, \label
 	bl forthword
@@ -518,8 +521,39 @@ _cl1:
 	//not done yet
 
 	FHEADER \:,1,0,COLON
-	.int WORD, CREATE,0
+	.int WORD, CREATE           // fetch a word from the input buffer, create a dictionary entry for it
+	.int LIT, 1, COMMA          // LIT,0 need to be replaced with bl forthcode, COMMA takes that item from the stack and puts at HERE
+	.int LATEST, FETCH // , HIDDEN  // LATEST provides a link to the newly created word
+	
+	# ---- COMMA
+	
+	# push integer to HERE, increase HERE with integer length
+	
+	HEADER ",",1,0,COMMA
+	ldr r1,=freemem
+	ldr r1,[r1]
+	KPOP
+	str r0,[r1]
+	add r1,#INTLEN
+	ldr r0,=freemem
+	str r1,[r0]
+	DONE
 
+	HEADER LATEST,6,0,LATEST
+	ldr r0,=firstword
+	ldr r0,[r0]
+	KPUSH
+	DONE
+
+	HEADER \@,1,0,FETCH
+	KPOP
+	ldr r0,[r0]
+	KPUSH
+	DONE
+
+	
+	
+	
 	
 
 hexnumber:
