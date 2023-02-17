@@ -12,10 +12,10 @@
 	.ltorg  // allow a literal pool here
 	.endm
 
-#// to create the built in words
+# to create the built in words
 
-	#define FLAG_HIDDEN 0x1
-	
+	#define FLAG_HIDDEN    0x1
+	#define FLAG_IMMEDIATE 0x2
 	.set link,0
 	
 	.macro HEADER word, wordlen, flags, label
@@ -79,6 +79,24 @@ done:
 	cmp r1, #0
 	beq loop // end of the list, simply freeze for now, later handle "up one" or "escape to prompt"
 
+	// here, if we are in compile mode, we shall simply push the word to compile. Unless the word is in immediate mode, in which
+	// case we always shall execute it
+	// happily, we always get the code here... which means that we need to subtract an offset to check the flags
+
+	
+	//sub r2, #(OFFSET_CODE-OFFSET_FLAGS)
+	//ldr r2,[r2]
+	//ldr r3,=FLAG_IMMEDIATE
+	//tst r2,r3
+	//beq notimmediate
+
+	//ldr r0,=debugstring
+	
+	//mov r1,r2
+	//bl printf
+notimmediate:	
+
+	
 	// load the first word of whatever we are pointing at
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
@@ -620,17 +638,18 @@ _o2:
 	.int LIT,base
 	.int 0
 
-	HEADER ],1,0,RBRAC
+	HEADER ],1,FLAG_IMMEDIATE,RBRAC
 	ldr r1,=0
 	ldr r0,=mode
 	str r1,[r0]
 	DONE
 
-	HEADER [,1,0,LBRAC
+	HEADER [,1,FLAG_IMMEDIATE,LBRAC
 	ldr r1,=1
 	ldr r0,=mode
 	str r1,[r0]
 	DONE
+
 	
 
 hexnumber:
