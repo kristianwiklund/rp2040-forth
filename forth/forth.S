@@ -43,7 +43,12 @@ word_\label:
 	#define OFFSET_CODE   (WORDS-next_WORDS)
 	#define OFFSET_NAME   (word_WORDS-next_WORDS)
 	#define OFFSET_LENGTH (length_WORDS-next_WORDS)
+	#define INTLEN 	      (word_WORDS-length_WORDS)
 main:
+	// reset things
+
+	bl resetme
+	
 	mov r7, #0
 	bl stdio_init_all
 	ldr r0, =hellogoodmorning
@@ -295,6 +300,12 @@ wordsloop:
 	bl putchar
 	DONE
 
+	# print a string from ascii pointed to by an item on the stack
+	HEADER TYPE,4,0,TYPE
+	KPOP
+	bl printf
+	DONE
+	
 	FHEADER CR,2,0,CR
 	.word LIT,10,EMIT,0
 
@@ -325,6 +336,7 @@ wordsloop:
 	ldr r0,[r3]
 	// for debugging
 	ldr r0,=buffer
+
 	// check for NULL pointer, return if we are NULL
 	cmp r0,#0
 	bne wc0
@@ -361,6 +373,9 @@ wc2:
 	//	pop {r0,r1,r2,r4,r5}	
 	b wc1
 wcend:
+	add r5,#1
+	ldr r4,=0
+	strb r4,[r1,r5]
 	ldr r0,=wordbuf
 	KPUSH	
 	mov r0,r5	
@@ -387,31 +402,14 @@ wcend:
 findloop:
 	// go through the words		
 	push {r0}
-
-	// debug
-	// push {r0,r1,r2}
-	// mov r1,r0
-	// add r1,#OFFSET_NAME	
-	// ldr r0,=debugstring
-	// bl printf
-	// pop {r0,r1,r2}
-	
 	ldr r4,[r0,#OFFSET_LENGTH]
-	
-	// push {r0,r1,r2,r4}
-	// mov r1,r4
-	// ldr r0,=debugnumber
-	// bl printf
-	// pop {r0,r1,r2,r4}
-	
+
 	// match the length	
 	cmp r4,r1  // then compare to the word we have on the stack
 _roggens:			
 	bne _nextfl // jump to the next part if it doesn't match
 
-	// if the length matches, check the content
-	//ldr r0,='!'        
-	//bl putchar
+
 _roggens5:	    
 	// if r5 is zero when we are done, we have a match
 	ldr r5,=0
@@ -447,8 +445,7 @@ _roggens3:
 	pop {r0}
 	KPUSH
 	DONE
-	
-	
+
 _nextfl:
 	pop {r0}	   // recover the pointer to the next word
 	ldr r0, [r0]       // (and fetch the value)
@@ -458,6 +455,72 @@ _roggens2:
 	ldr r0,=0
 	KPUSH		   // nothing found, push 0
 	DONE
+
+	
+
+	# -- run a word pointed to by the topmost item on the stack
+	
+	HEADER EXECUTE,7,0,EXECUTE
+	KPOP
+	mov pc,r0
+
+	# -- make a word placeholder
+	
+	HEADER CREATE,6,0,CREATE
+	KPOP	
+	mov r1,r0 // length of the name
+	KPOP
+_lambo2:	
+	mov r2,r0 // pointer of the name
+	push {r1}
+	
+	// get "HERE"
+	ldr r0,=freemem
+	ldr r5,[r0]  // contains HERE
+_lambo3:	
+	// get the first word in the (current) list and link it to this word
+	ldr r4,=firstword
+	ldr r3,[r4]
+	str r3,[r5]
+_lambo:	
+	// then set the first word to this word
+	str r5,[r4]
+	
+	// bump the pointer, and store the length of the word name
+	add r5,#INTLEN
+	str r1,[r5]
+
+	// bump the pointer and store 0 (the flags)
+	ldr r3,=0
+	add r5,#INTLEN
+	str r3,[r5]
+
+	// bump the pointer and store the name itself
+	add r5,#INTLEN
+_cl1:
+	ldrb r3,[r2,r1]
+	strb r3,[r5,r1]
+	sub r1,#1
+	cmp r1,#0
+	bne _cl1
+
+	pop {r1}
+
+	// bump the pointer to behind the word name
+	add r5,r1
+	add r5,#1
+	// terminate the string with a 0
+	ldr r3,=0
+	strb r3,[r5]
+	DONE
+	
+	// now the tricky part, align HERE to instruction boundary
+	//not done yet
+
+	FHEADER \:,1,0,COLON
+	.int WORD, CREATE,0
+
+	
 
 hexnumber:
 	.asciz "%x\n"
@@ -477,8 +540,7 @@ forthword:
 	.align 4		
 list:
 	.word WORDS
-	.word WORD, FIND // after calling "word" we have an item in the beginning of the buffer.
-	.word DOT
+	.word WORD, SWAP, DUP, TYPE, SWAP, CREATE, WORDS // after calling "word" we have an item in the beginning of the buffer.
 	.word 0
 
 _kpush:	
@@ -501,10 +563,21 @@ _kpop:
 	ldr r0,[r0]
 	pop {r1,pc}
 
+
+resetme:
+	push {lr}
+	ldr r0,=freemem
+	ldr r1,=heap
+	str r1,[r0]
+
+	ldr r0,=link
+	ldr r1,=firstword
+	str r0,[r1]
+	pop {pc}
 	
 	###
 	## variables
-	
+
 	.data
 	.align 4
 wordptr:
@@ -514,7 +587,7 @@ dbw:
 input:
 	.word buffer
 buffer:
-	.asciz "AAAAAAA 10 5 DIV DOT"
+	.asciz "ABCDEF 10 5 DIV DOT"
 	.align 4
 freemem:
 	.word endstack
