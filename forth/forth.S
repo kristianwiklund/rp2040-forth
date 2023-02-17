@@ -39,7 +39,7 @@ word_\label:
 	
 	.macro FHEADER word, wordlen, flags, label
 	HEADER \word, \wordlen, \flags, \label
-	bl forthword
+	.int 1 // signals that this is a forth-defined word
 	.endm
 	
 	#define	OFFSET_FLAGS  (flags_WORDS-next_WORDS)
@@ -76,6 +76,13 @@ done:
 	ldr r1,[r2]
 	cmp r1, #0
 	beq loop // end of the list, simply freeze for now, later handle "up one" or "escape to prompt"
+
+	// load the first word of whatever we are pointing at
+	// if that is number 1, the word we intend to execute
+	// is a forth-defined word
+	ldr r2,[r1]
+	cmp r2,#1
+	beq handleforthword
 	
 	mov pc,r1 // jump to the next word in the list
 loop:
@@ -96,6 +103,32 @@ bloop:
 
 	###
 	##	strings
+
+	// handle a word written in forth.
+	
+handleforthword:	
+	// start by bumping the address to the next item in the list,
+	// which is a pointer to an actual word
+	add r1,#INTLEN
+	mov r14,r1
+
+	
+	// old code that we called if a word is written in forth
+	// due to the thumb architecture, this doesn't really work,
+	// unless we do a lot of annoying math while creating the word
+
+	
+forthword:
+	// r14 contains the pointer to the list of pointers to words
+	ldr r0,=wordptr
+	ldr r1,[r0]
+	push {r1}
+	mov r1, r14
+	//sub r1, #1     // because $REASONS
+	str r1,[r0]
+	DONE
+		
+
 	
 hellogoodmorning:	
 	.asciz "\n\n\nWelcome!\n\n"
@@ -551,7 +584,10 @@ _cl1:
 	KPUSH
 	DONE
 
-	
+	FHEADER DEMO,4,0,DEMO
+	.int LIT,7,LIT,3,DUP,LIT,1
+	.int DOT,DOT,DOT,DOT
+	.int 0
 	
 	
 	
@@ -560,21 +596,12 @@ hexnumber:
 	.asciz "%x\n"
 	
 	
-	// called if a word is written in forth
-forthword:
-	// r14 contains the pointer to the list of pointers to words
-	ldr r0,=wordptr
-	ldr r1,[r0]
-	push {r1}
-	mov r1, r14
-	sub r1, #1     // because $REASONS
-	str r1,[r0]
-	DONE
-		
+	
 	.align 4		
 list:
 	.word WORDS
-	.word WORD, SWAP, DUP, TYPE, SWAP, CREATE, WORDS // after calling "word" we have an item in the beginning of the buffer.
+	.word DEMO
+	//.word WORD, SWAP, DUP, TYPE, SWAP, CREATE, WORDS // after calling "word" we have an item in the beginning of the buffer.
 	.word 0
 
 _kpush:	
