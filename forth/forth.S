@@ -12,7 +12,7 @@
 
 #// to create the built in words
 
-	// flags are not used yet
+	#define FLAG_HIDDEN 0x1
 	
 	.set link,0
 	
@@ -177,12 +177,18 @@ wordsloop:
 	push {r0}
 	pop {r0}
 
+	// don't print hidden words
+	ldr r1,[r0,#OFFSET_FLAGS]
+	ldr r2,=FLAG_HIDDEN 
+	cmp r1,r2
+	beq skipprint
+	
 	add r0,#OFFSET_NAME	   
 	bl printf	   // print the word
 	
 	ldr r0,=' '        // then print a space
 	bl putchar
-	
+skipprint:	
 	pop {r0}	   // recover the pointer to the next word
 	ldr r0, [r0]       // (and fetch the value)
 	cmp r0, #0         // continue until we reach the end of the list
@@ -325,8 +331,17 @@ wordsloop:
 
 	HEADER .,1,0,DOT
 	KPOP
+	ldr r2,=base
+	ldr r2,[r2]
+	cmp r2,#16
+	beq _hex
 	mov r1,r0
 	ldr r0,=numberstring
+	bl printf
+	DONE
+_hex:
+	mov r1,r0
+	ldr r0,=hexnumber
 	bl printf
 	DONE
 
@@ -521,42 +536,64 @@ _lambo3:
 _lambo:	
 	// then set the first word to this word
 	str r5,[r4]
-	
-	// bump the pointer, and store the length of the word name
-	add r5,#INTLEN
-	str r1,[r5]
 
 	// bump the pointer and store 0 (the flags)
 	ldr r3,=0
 	add r5,#INTLEN
 	str r3,[r5]
+	
+	// bump the pointer, and store the length of the word name
+	add r5,#INTLEN
+	str r1,[r5]
+
+
 
 	// bump the pointer and store the name itself
 	add r5,#INTLEN
+
 _cl1:
 	ldrb r3,[r2,r1]
 	strb r3,[r5,r1]
 	sub r1,#1
 	cmp r1,#0
 	bne _cl1
-
+	ldrb r3,[r2,r1] // store last letter
+	strb r3,[r5,r1]
 	pop {r1}
-
+_cl2:	
 	// bump the pointer to behind the word name
 	add r5,r1
 	add r5,#1
 	// terminate the string with a 0
 	ldr r3,=0
 	strb r3,[r5]
+	// now the tricky part, align HERE to instruction boundary
+
+	add r5,#7
+	lsr r5,#3
+	lsl r5,#3
+	ldr r0,=freemem
+	str r5,[r0]
+_created:			
 	DONE
 	
-	// now the tricky part, align HERE to instruction boundary
-	//not done yet
+	
+
+	HEADER HIDDEN,6,0,HIDDEN
+	KPOP
+	ldr r1,[r0,#OFFSET_FLAGS]
+	ldr r2,=FLAG_HIDDEN
+_o1:	
+	orr r1,r2
+_o2:	
+	str r1,[r0,#OFFSET_FLAGS]
+
+	DONE
 
 	FHEADER \:,1,0,COLON
-	.int WORD, CREATE           // fetch a word from the input buffer, create a dictionary entry for it
-	.int LIT, 1, COMMA          // LIT,0 need to be replaced with bl forthcode, COMMA takes that item from the stack and puts at HERE
-	.int LATEST, FETCH // , HIDDEN  // LATEST provides a link to the newly created word
+	.int LIT, 1, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
+	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
+	.int 0
 	
 	# ---- COMMA
 	
@@ -574,7 +611,6 @@ _cl1:
 
 	HEADER LATEST,6,0,LATEST
 	ldr r0,=firstword
-	ldr r0,[r0]
 	KPUSH
 	DONE
 
@@ -589,19 +625,26 @@ _cl1:
 	.int DOT,DOT,DOT,DOT
 	.int 0
 	
-	
+	FHEADER BASE,4,0,BASE
+	.int LIT,base
+	.int 0
 	
 
 hexnumber:
-	.asciz "%x\n"
+	.asciz "%x"
 	
 	
 	
 	.align 4		
 list:
-	.word WORDS
-	.word DEMO
-	//.word WORD, SWAP, DUP, TYPE, SWAP, CREATE, WORDS // after calling "word" we have an item in the beginning of the buffer.
+	.word WORDS,CR
+	.int LATEST, DUP, DOT, CR, FETCH, DOT, CR	
+	.int WORD, CREATE           // fetch a word from the input buffer, create a dictionary entry for it
+	.int WORDS, CR
+	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
+	.int LATEST, DUP, DOT, CR, FETCH, DOT, CR
+	.int WORDS
+	.int HERE, DOT, CR
 	.word 0
 
 _kpush:	
@@ -652,6 +695,10 @@ buffer:
 	.align 4
 freemem:
 	.word endstack
+
+	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
+base:
+	.word 16
 	
 firstword:
 	.word link
