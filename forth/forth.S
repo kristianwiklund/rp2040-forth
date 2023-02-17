@@ -6,7 +6,9 @@
 	.cpu cortex-m0
 	
 	.macro DONE
-	b done
+	ldr r0,=done
+	mov pc,r0
+//	b done
 	.ltorg  // allow a literal pool here
 	.endm
 
@@ -129,17 +131,6 @@ forthword:
 	DONE
 		
 
-	
-hellogoodmorning:	
-	.asciz "\n\n\nWelcome!\n\n"
-donemsg:
-	.asciz "\nDone!\n"
-numberstring:
-	.asciz "%d"
-debugstring:
-	.asciz "<%s>"
-debugnumber:
-	.asciz "[%d]"
 	
 	# -------------
 	# a couple of test words
@@ -628,6 +619,18 @@ _o2:
 	FHEADER BASE,4,0,BASE
 	.int LIT,base
 	.int 0
+
+	HEADER ],1,0,RBRAC
+	ldr r1,=0
+	ldr r0,=mode
+	str r1,[r0]
+	DONE
+
+	HEADER [,1,0,LBRAC
+	ldr r1,=1
+	ldr r0,=mode
+	str r1,[r0]
+	DONE
 	
 
 hexnumber:
@@ -638,7 +641,7 @@ hexnumber:
 	.align 4		
 list:
 	.word WORDS,CR
-	.int LATEST, DUP, DOT, CR, FETCH, DOT, CR	
+	.int LATEST, DUP, DOT, CR, FETCH, DOT, CR
 	.int WORD, CREATE           // fetch a word from the input buffer, create a dictionary entry for it
 	.int WORDS, CR
 	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
@@ -683,6 +686,19 @@ resetme:
 	## variables
 
 	.data
+
+hellogoodmorning:	
+	.asciz "\n\n\nWelcome!\n\n"
+donemsg:
+	.asciz "\nDone!\n"
+numberstring:
+	.asciz "%d"
+debugstring:
+	.asciz "<%s>"
+debugnumber:
+	.asciz "[%d]"
+	
+
 	.align 4
 wordptr:
 	.word 0
@@ -699,6 +715,10 @@ freemem:
 	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
 base:
 	.word 16
+
+	// compile or interpretation mode
+mode:
+	.word 0
 	
 firstword:
 	.word link
