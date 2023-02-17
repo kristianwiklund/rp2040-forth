@@ -21,8 +21,10 @@
 next_\label:
 	.int link
 	.set link, next_\label
-header_\label:		
-	.int \wordlen+\flags
+flags_\label:
+	.int \flags
+length_\label:	
+	.int \wordlen
 word_\label:
 	.asciz "\word"
 	.align 4
@@ -37,10 +39,10 @@ word_\label:
 	bl forthword
 	.endm
 	
-	#define	OFFSET_FLAGS (header_WORDS-next_WORDS)
-	#define OFFSET_CODE  (WORDS-next_WORDS)
-	#define OFFSET_NAME  (word_WORDS-next_WORDS)
-	
+	#define	OFFSET_FLAGS  (flags_WORDS-next_WORDS)
+	#define OFFSET_CODE   (WORDS-next_WORDS)
+	#define OFFSET_NAME   (word_WORDS-next_WORDS)
+	#define OFFSET_LENGTH (length_WORDS-next_WORDS)
 main:
 	mov r7, #0
 	bl stdio_init_all
@@ -95,14 +97,16 @@ numberstring:
 	.asciz "%d"
 debugstring:
 	.asciz "<%s>"
+debugnumber:
+	.asciz "[%d]"
 	
 	# -------------
 	# a couple of test words
 
 	# -------------
 	
-	HEADER TICK, 4, 0, TICK
-	ldr r0, =word_TICK
+	HEADER AAAAAAA, 7, 0, AAAAAAA
+	ldr r0, =word_AAAAAAA
 	bl printf
 	DONE
 
@@ -116,14 +120,7 @@ debugstring:
 	# utility macros to move things on and off the value stack
 	# both operate on r0
 	.macro KPOP
-	push {r1}
-	ldr r1,=stackptr
-	ldr r0,[r1]
-	add r0,#endstack-stacktop
-	str r0,[r1]
-	ldr r0,[r1]
-	ldr r0,[r0]
-	pop {r1}
+	bl _kpop
 	.endm
 		
 	.macro KPUSH
@@ -326,6 +323,8 @@ wordsloop:
 	
 	ldr r3,=input
 	ldr r0,[r3]
+	// for debugging
+	ldr r0,=buffer
 	// check for NULL pointer, return if we are NULL
 	cmp r0,#0
 	bne wc0
@@ -351,17 +350,15 @@ wc2:
 	// save the retrieved character somewhere
 
 	strb r4,[r1,r5]      // store the character in the word buffer
-	add r2,#1        // bump the memory pointer
-	str r2,[r1]      // and store it back to freemem
 	// increment the counter at memstart
 	add r5,#1
 	// debug, print the character
-	//	push {r0}
-	//mov r0,r4
-	//bl putchar
-	//ldr r0,=' '
-	//bl putchar
-	//pop {r0}
+	//		push {r0,r1,r2,r4,r5}
+	//		mov r0,r4
+	//	bl putchar
+	//	ldr r0,='-'
+	//	bl putchar
+	//	pop {r0,r1,r2,r4,r5}	
 	b wc1
 wcend:
 	ldr r0,=wordbuf
@@ -370,7 +367,97 @@ wcend:
 	KPUSH
 	DONE
 	
+	# --------------------
+	# --- FIND ------------
 	
+	HEADER FIND,4,0,FIND
+	// traverse the word linked list and see if we match what we have on the stack
+	// consume the length and the address of the word on the stack
+	KPOP
+	mov r1,r0 // length
+	KPOP
+	mov r2,r0 // pointer
+
+	// drop the address to the word header on the stack on match, zero on no match
+
+	// start at the end of the list
+
+	ldr r0, =firstword // get the pointer to the first word in the list
+	ldr r0, [r0]       // (and fetch the value)
+findloop:
+	// go through the words		
+	push {r0}
+
+	// debug
+	// push {r0,r1,r2}
+	// mov r1,r0
+	// add r1,#OFFSET_NAME	
+	// ldr r0,=debugstring
+	// bl printf
+	// pop {r0,r1,r2}
+	
+	ldr r4,[r0,#OFFSET_LENGTH]
+	
+	// push {r0,r1,r2,r4}
+	// mov r1,r4
+	// ldr r0,=debugnumber
+	// bl printf
+	// pop {r0,r1,r2,r4}
+	
+	// match the length	
+	cmp r4,r1  // then compare to the word we have on the stack
+_roggens:			
+	bne _nextfl // jump to the next part if it doesn't match
+
+	// if the length matches, check the content
+	//ldr r0,='!'        
+	//bl putchar
+_roggens5:	    
+	// if r5 is zero when we are done, we have a match
+	ldr r5,=0
+	mov r4,r1
+	// r4 contains the length of the string in the word we are checking against
+
+	mov r3,r2 // pointer to the word on stack
+	mov r6,r0 // contains the pointer to the word we compare
+	add r6, #OFFSET_NAME // transpose to the string part
+
+_findtestloop:	
+	ldrb r7,[r3,r4]
+	ldrb r0,[r6,r4]
+_roggens4:	
+	// compare strings
+	sub r7,r0
+	add r5,r7
+	
+	sub r4,#1
+	cmp r4,#0
+_roggens3:	
+	bne _findtestloop
+
+	// not a match
+	cmp r5,#0
+	bne _nextfl
+
+	// match
+	//ldr r0,='*'        
+	//bl putchar
+
+	// cleanup and return
+	pop {r0}
+	KPUSH
+	DONE
+	
+	
+_nextfl:
+	pop {r0}	   // recover the pointer to the next word
+	ldr r0, [r0]       // (and fetch the value)
+	cmp r0, #0         // continue until we reach the end of the list
+_roggens2:	
+	bne findloop
+	ldr r0,=0
+	KPUSH		   // nothing found, push 0
+	DONE
 
 hexnumber:
 	.asciz "%x\n"
@@ -389,9 +476,9 @@ forthword:
 		
 	.align 4		
 list:
-	.word WORDS, WORD // after calling "word" we have an item in the beginning of the buffer.
-	.word DOT,SPACE,DOT,CR
-	
+	.word WORDS
+	.word WORD, FIND // after calling "word" we have an item in the beginning of the buffer.
+	.word DOT
 	.word 0
 
 _kpush:	
@@ -404,6 +491,17 @@ _kpush:
         pop {r1,r2,pc}
 
 
+_kpop:	
+	push {r1,lr}
+	ldr r1,=stackptr
+	ldr r0,[r1]
+	add r0,#endstack-stacktop
+	str r0,[r1]
+	ldr r0,[r1]
+	ldr r0,[r0]
+	pop {r1,pc}
+
+	
 	###
 	## variables
 	
@@ -416,7 +514,7 @@ dbw:
 input:
 	.word buffer
 buffer:
-	.asciz "XYZZY 10 5 DIV DOT"
+	.asciz "AAAAAAA 10 5 DIV DOT"
 	.align 4
 freemem:
 	.word endstack
