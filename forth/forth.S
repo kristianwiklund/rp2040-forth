@@ -27,9 +27,9 @@ word_\label:
 	.asciz "\word"
 	.align 4
 \label:
-	ldr r0, =debugstring
-	ldr r1, =word_\label
-	bl printf
+//	ldr r0, =debugstring
+//	ldr r1, =word_\label
+//	bl printf
 	.endm
 
 	.macro FHEADER word, wordlen, flags, label
@@ -126,14 +126,9 @@ debugstring:
 	pop {r1}
 	.endm
 		
-	.macro KPUSH 
-	push {r1,r2}
-	ldr r1, =stackptr      		// get the pointer to the bottom of the stack
-	ldr r2,[r1]
-	str r0,[r2]			// store the value on the stack
-	sub r2,#endstack-stacktop	// update the stack pointer
-	str r2,[r1]
-	pop {r1,r2}
+	.macro KPUSH
+	bl _kpush
+	
 	.endm
 	
 	HEADER WORDS, 5, 0 , WORDS
@@ -325,21 +320,21 @@ wordsloop:
 	// this does not ensure that we are at an aligned boundary. Write a helper that secures that "freemem"
 	// is bumped to an aligned space
 	// load the pointer to the buffer
+	// r3 - input buffer pointer
+	// r5 - input length counter
+	// r1 - word buffer storage
+	
 	ldr r3,=input
 	ldr r0,[r3]
 	// check for NULL pointer, return if we are NULL
 	cmp r0,#0
 	bne wc0
+	KPUSH
+	KPUSH
 	DONE
 wc0:	
-	// allocate an integer at the start of the free memory area
-	ldr r1,=freemem
-	ldr r5,[r1]
-	ldr r2, =0
-	str r2, [r5] // set zero length
-	mov r2,r5
-	add r2,#(endstack-stacktop)
-	str r2,[r1]	// freemem is now at the beginning of where the chars should go
+	ldr r1,=wordbuf  // get the address to the start of the wordbuf
+	ldr r5,=0	// zero length
 wc1:
 	ldrb r4,[r0]     // read the input character (a byte) from the buffer
 	add r0, #1	// increase the pointer
@@ -351,17 +346,15 @@ wc1:
 	beq wcend
 	cmp r4, #'\n'
 	beq wcend
+
 wc2:
 	// save the retrieved character somewhere
-	ldr r1,=freemem  // get the 
-	ldr r2,[r1]      // address to the first free byte
-	strb r4,[r2]      // store the character there
+
+	strb r4,[r1,r5]      // store the character in the word buffer
 	add r2,#1        // bump the memory pointer
 	str r2,[r1]      // and store it back to freemem
 	// increment the counter at memstart
-	ldr r4,[r5]
-	add r4,#1
-	str r4,[r5]
+	add r5,#1
 	// debug, print the character
 	//	push {r0}
 	//mov r0,r4
@@ -371,7 +364,10 @@ wc2:
 	//pop {r0}
 	b wc1
 wcend:
-
+	ldr r0,=wordbuf
+	KPUSH	
+	mov r0,r5	
+	KPUSH
 	DONE
 	
 	
@@ -393,11 +389,19 @@ forthword:
 		
 	.align 4		
 list:
-	.word WORDS,HERE,DOT,SPACE,CR
-	.word WORD
-	.word HERE,DOT,SPACE,CR
-	.word 0
+	.word WORDS, WORD // after calling "word" we have an item in the beginning of the buffer.
+	.word DOT,SPACE,DOT,CR
 	
+	.word 0
+
+_kpush:	
+        push {r1,r2,lr}
+        ldr r1, =stackptr               // get the pointer to the bottom of the stack
+        ldr r2,[r1]
+        str r0,[r2]                     // store the value on the stack
+        sub r2,#endstack-stacktop       // update the stack pointer
+        str r2,[r1]
+        pop {r1,r2,pc}
 
 
 	###
@@ -432,6 +436,10 @@ stacktop:
 	.int 0
 endstack:
 	.align 4
+wordbuf:
+	.rept 32
+	.byte 0
+	.endr
 heap:
 	.rept 2000
 	.int 0
