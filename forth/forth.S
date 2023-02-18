@@ -582,6 +582,13 @@ wcend:
 	
 	# --------------------
 	# --- FIND ------------
+
+	// r0 - linked list pointer
+	// r1 - target word length
+	// r2 - target word string pointer
+
+	// in the match loop:
+	// r3 - loop indexer
 	
 	HEADER "FIND",4,0,FIND
 	// traverse the word linked list and see if we match what we have on the stack
@@ -608,28 +615,27 @@ _roggens:
 	bne _nextfl // jump to the next part if it doesn't match
 
 
-_roggens5:	    
+_roggens5:
 	// if r5 is zero when we are done, we have a match
 	ldr r5,=0
-	mov r4,r1
+	ldr r3,=0
 	// r4 contains the length of the string in the word we are checking against
 
-	mov r3,r2 // pointer to the word on stack
 	mov r6,r0 // contains the pointer to the word we compare
 	add r6, #OFFSET_NAME // transpose to the string part
 
 _findtestloop:	
-	ldrb r7,[r3,r4]
-	ldrb r0,[r6,r4]
-_roggens4:	
+	ldrb r7,[r2,r3]
+	ldrb r0,[r6,r3]
+_roggens4:
 	// compare strings
 	sub r7,r0
 	add r5,r7
-	
-	sub r4,#1
-	cmp r4,#0
+
+	add r3,#1
+	cmp r3,r1
 _roggens3:	
-	bne _findtestloop
+	blt _findtestloop
 
 	// not a match
 	cmp r5,#0
