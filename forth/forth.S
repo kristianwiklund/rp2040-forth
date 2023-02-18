@@ -494,7 +494,9 @@ loopzor:
 
 	cmp r0,#'\n'
 	beq endloopzor
-
+	cmp r0,#'\r'
+	beq endloopzor
+	
 	strb r0,[r1]
 	add r1,#1
 	
@@ -530,7 +532,11 @@ _ofsl:
 	// r3 - input buffer pointer
 	// r5 - input length counter
 	// r1 - word buffer storage
+	bl wordhelper
+	DONE
 	
+wordhelper:
+	push {lr}
 	ldr r3,=input
 	ldr r0,[r3]
 	// for debugging
@@ -541,7 +547,7 @@ _ofsl:
 	bne wc0
 	KPUSH
 	KPUSH
-	DONE
+	pop {pc}
 wc0:	
 	ldr r1,=wordbuf  // get the address to the start of the wordbuf
 	ldr r5,=0	// zero length
@@ -580,7 +586,7 @@ wcend:
 	KPUSH	
 	mov r0,r5	
 	KPUSH
-	DONE
+	pop {pc}
 	
 	# --------------------
 	# --- FIND ------------
@@ -812,12 +818,17 @@ _o2:
 	str r1,[r0]
 	DONE
 
-	FHEADER "INTERPRET",9,0,INTERPRET
-	// get a word from input
-	.int WORD
-	.int FIND
-	.int EXECUTE
-	.int 0
+	HEADER "INTERPRET",9,0,INTERPRET
+	// get words from input until exhausted
+	// run each word through execution
+	// happy fun time
+
+	bl wordhelper // drops word and length of word on the forth stack
+	bl findhelper // find the word, drops pointer or zero on the forth stack
+
+	DONE
+	
+	
 	
 
 hexnumber:
@@ -830,6 +841,8 @@ hexdebug:
 list:
 	.word PROMPT			// get text from the user
 	.word INTERPRET			// run the text
+//	.word FIND
+//	.word EXECUTE
 	.word 0
 
 _kpush:	
