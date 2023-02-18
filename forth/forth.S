@@ -610,7 +610,7 @@ findloop:
 	// match the length	
 	cmp r4,r1  // then compare to the word we have on the stack
 _roggens:			
-	bne _nextfl // jump to the next part if it doesn't match
+	bne _nextfl // jump to the next part if it does not match
 
 
 _roggens5:
