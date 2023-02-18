@@ -76,6 +76,7 @@ main:
 	ldr r0,=0
 	push {r0} // end of input exec marker
 
+execute:	
 done:
 	// execute the next word in the list, unless we are done executing words in the list
 	ldr r0, =wordptr
@@ -113,7 +114,7 @@ done:
 //	ldr r0,=notimmediatemsg
 //	add r1,#OFFSET_NAME
 //	bl printf
-//	pop {r1}
+//    	pop {r1}
 	
 	// check for compile time here
 
@@ -152,6 +153,14 @@ immediatemsg:
 	.align 4
 
 runthecodeimmediate:
+	// we are executing in immediate mode.
+	// all subsequent instructions must continue executing in
+	// immediate mode, or things will fail horribly
+	
+	// which means that we need to remove any compile flags we have
+	// going on, and execute the rest of the descending commands
+	// in immediate...
+	
 	// print debug message if the instruction is "immediate"
 	push {r1}
 	ldr r0,=immediatemsg
@@ -675,12 +684,12 @@ _o2:
 	FHEADER ":",1,0,COLON
 	.int LIT, 1, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
 	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
-	.int LBRAC			// go to compile mode
+	.int RBRAC			// go to compile mode
 	.int 0
 
 	FHEADER ";",1,FLAG_IMMEDIATE,SEMICOLON
 	.int LIT,0,COMMA	// add end of word marker
-	.int RBRAC		// end compile mode
+	.int LBRAC		// end compile mode
 	.int LATEST,FETCH,HIDDEN // remove hidden flag
 	.int 0
 	
@@ -719,13 +728,13 @@ _o2:
 	.int 0
 
 	HEADER "]",1,FLAG_IMMEDIATE,RBRAC
-	ldr r1,=0
+	ldr r1,=1
 	ldr r0,=mode
 	str r1,[r0]
 	DONE
 
 	HEADER "[",1,FLAG_IMMEDIATE,LBRAC
-	ldr r1,=1
+	ldr r1,=0
 	ldr r0,=mode
 	str r1,[r0]
 	DONE
