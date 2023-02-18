@@ -18,8 +18,9 @@
 	#define FLAG_IMMEDIATE 0x2
 	.set link,0
 	
-	.macro HEADER word, wordlen, flags, label
+	.macro RAWHEADER word, wordlen, flags=0, label
 	.align 4
+\label:	
 next_\label:
 	.int link
 	.set link, next_\label
@@ -30,22 +31,31 @@ length_\label:
 word_\label:
 	.asciz "\word"
 	.align 4
-\label:
-//	ldr r0, =debugstring
-//	ldr r1, =word_\label
-//	bl printf
+code_\label:
+	.endm
+
+	.macro HEADER word, wordlen, flags, label
+	RAWHEADER \word, \wordlen, \flags, \label
+	ldr r0, =worddescstring
+	ldr r1, =word_\label
+	ldr r2, =flags_\label
+	ldr r2, [r2]
+	ldr r3, =length_\label
+	ldr r3, [r3]
+	
+	bl printf
 	.endm
 
 //goff:	
 //	blx main
 	
 	.macro FHEADER word, wordlen, flags, label
-	HEADER \word, \wordlen, \flags, \label
+	RAWHEADER \word, \wordlen, \flags, \label
 	.int 1 // signals that this is a forth-defined word
 	.endm
 	
 	#define	OFFSET_FLAGS  (flags_WORDS-next_WORDS)
-	#define OFFSET_CODE   (WORDS-next_WORDS)
+//	#define OFFSET_CODE   (WORDS-next_WORDS)         // this... does not work, since the size of the ascii is all different.
 	#define OFFSET_NAME   (word_WORDS-next_WORDS)
 	#define OFFSET_LENGTH (length_WORDS-next_WORDS)
 	#define INTLEN 	      (word_WORDS-length_WORDS)
@@ -77,35 +87,57 @@ done:
 	str r1,[r0]
 	ldr r1,[r2]
 	cmp r1, #0
-	beq loop // end of the list, simply freeze for now, later handle "up one" or "escape to prompt"
+	beq endoflist // end of the list handler
 
 	// here, if we are in compile mode, we shall simply push the word to compile. Unless the word is in immediate mode, in which
 	// case we always shall execute it
 	// happily, we always get the code here... which means that we need to subtract an offset to check the flags
 
+	// r1 now contains the pointer to a structure containing the word, not the code as such
+	// hence, we can operate on r1 with offsets, BUT we also have to seek where the actual code is
+	// when we intend to execute it
 	
-	//sub r2, #(OFFSET_CODE-OFFSET_FLAGS)
-	//ldr r2,[r2]
-	//ldr r3,=FLAG_IMMEDIATE
-	//tst r2,r3
-	//beq notimmediate
+	ldr r2,[r1, #OFFSET_FLAGS]
 
-	//ldr r0,=debugstring
+//	push {r1}
+//	ldr r0,=hexnumber
+//	bl printf
+//	pop {r1}
 	
-	//mov r1,r2
-	//bl printf
-notimmediate:	
+	ldr r3,=FLAG_IMMEDIATE
+	tst r2,r3
+	beq runthecode
 
-	
+	// check for compile time here
+
+runthecode:
+	// here we shall run the actual code.
+	// the actual code is located at
+	// word base + OFFSET_NAME + name length (OFFSET_LENGTH) + padding
+
+	// r1 contains the word base
+	// get the length
+
+	ldr r3, [r1,#OFFSET_LENGTH]
+	add r1, r3
+	add r1, #OFFSET_NAME
+	// pad the pointer to get to where the code is
+	add r1,#7
+	lsr r1,#3
+	lsl r1,#3
+
+	// now we have the pointer to the code list in r1
+
 	// load the first word of whatever we are pointing at
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
-	ldr r2,[r1]
+	ldr r2,[r1]	
 	cmp r2,#1
 	beq handleforthword
 	
 	mov pc,r1 // jump to the next word in the list
-loop:
+	
+endoflist:
 	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt	
 	pop {r0}
 	cmp r0,#0
@@ -608,7 +640,7 @@ _o2:
 	
 	# push integer to HERE, increase HERE with integer length
 	
-	HEADER ",",1,0,COMMA
+	RAWHEADER ",",1,0,COMMA
 	ldr r1,=freemem
 	ldr r1,[r1]
 	KPOP
@@ -660,7 +692,7 @@ hexnumber:
 	.align 4		
 list:
 	.word WORDS,CR
-	.int LATEST, DUP, DOT, CR, FETCH, DOT, CR
+	.int LBRAC,LATEST, DUP, DOT, CR, FETCH, DOT, CR
 	.int WORD, CREATE           // fetch a word from the input buffer, create a dictionary entry for it
 	.int WORDS, CR
 	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
@@ -713,7 +745,9 @@ donemsg:
 numberstring:
 	.asciz "%d"
 debugstring:
-	.asciz "<%s>"
+	.asciz "<%s>\n"
+worddescstring:	
+	.asciz "<%s, flags=%x, length=%d>\n"
 debugnumber:
 	.asciz "[%d]"
 	
