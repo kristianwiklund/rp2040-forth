@@ -193,20 +193,8 @@ immediatemsg:
 //	pop {r1} // pop D
 runthecode:
 	// here we shall run the actual code.
-	// the actual code is located at
-	// word base + OFFSET_NAME + name length (OFFSET_LENGTH) + padding
 
-	// r1 contains the word base
-	// get the length
-
-	ldr r3, [r1,#OFFSET_LENGTH]
-	add r1, r3
-	add r1, #OFFSET_NAME
-	// pad the pointer to get to where the code is
-	add r1,#7
-	lsr r1,#3
-	lsl r1,#3
-
+	bl get_code_offset
 	// now we have the pointer to the code list in r1
 
 	// load the first word of whatever we are pointing at
@@ -247,6 +235,25 @@ _t4:
 	###
 	##	strings
 
+	// helper to get the offset to the code from a pointer to a word
+get_code_offset:
+	// the actual code is located at
+	// word base + OFFSET_NAME + name length (OFFSET_LENGTH) + padding
+
+	// r1 contains the word base
+	// get the length
+
+
+	push {lr}
+	ldr r3, [r1,#OFFSET_LENGTH]
+	add r1, r3
+	add r1, #OFFSET_NAME
+	// pad the pointer to get to where the code is
+	add r1,#7
+	lsr r1,#3
+	lsl r1,#3
+	pop {pc}
+	
 	// handle a word written in forth.
 	
 handleforthword:	
@@ -591,6 +598,8 @@ wc1:
 	beq wcend
 	cmp r4, #'\n'
 	beq wcend
+	cmp r4, #'\r'
+	beq wcend
 
 wc2:
 	// save the retrieved character somewhere
@@ -607,7 +616,6 @@ wc2:
 	//	pop {r0,r1,r2,r4,r5}	
 	b wc1
 wcend:
-	add r5,#1
 	ldr r4,=0
 	strb r4,[r1,r5]
 	ldr r0,=wordbuf
@@ -696,7 +704,15 @@ _roggens2:
 	
 	HEADER "EXECUTE",7,0,EXECUTE
 	KPOP
-	mov pc,r0
+	cmp r0,#0
+	beq _noexec
+	mov r1,r0
+	bl get_code_offset
+	mov pc,r1
+_noexec:
+	DONE
+	
+	
 
 	# -- make a word placeholder
 	
@@ -831,6 +847,12 @@ _o2:
 	str r1,[r0]
 	DONE
 
+	FHEADER "INTERPRET",9,0,INTERPRET
+	// get a word from input
+	.int WORD
+	.int FIND
+	.int EXECUTE
+	DONE
 	
 
 hexnumber:
@@ -841,8 +863,11 @@ hexdebug:
 	
 	.align 4		
 list:
-	.word PROMPT
-	//	.word INTERPRETER
+	.word PROMPT			// get text from the user
+//	.word WORD
+//	.word FIND
+//	.word EXECUTE
+	.word INTERPRET			// run the text
 	.word 0
 
 _kpush:	
