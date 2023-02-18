@@ -35,14 +35,13 @@ code_\label:
 	.endm
 
 	.macro HEADER word, wordlen, flags, label
-	RAWHEADER \word, \wordlen, \flags, \label
+	RAWHEADER "\word", \wordlen, \flags, \label
 	ldr r0, =worddescstring
 	ldr r1, =word_\label
 	ldr r2, =flags_\label
 	ldr r2, [r2]
 	ldr r3, =length_\label
-	ldr r3, [r3]
-	
+	ldr r3, [r3]	
 	bl printf
 	.endm
 
@@ -50,7 +49,7 @@ code_\label:
 //	blx main
 	
 	.macro FHEADER word, wordlen, flags, label
-	RAWHEADER \word, \wordlen, \flags, \label
+	RAWHEADER "\word", \wordlen, \flags, \label
 	.int 1 // signals that this is a forth-defined word
 	.endm
 	
@@ -105,11 +104,60 @@ done:
 //	pop {r1}
 	
 	ldr r3,=FLAG_IMMEDIATE
-	tst r2,r3
-	beq runthecode
+	and r2,r3
+	cmp r2,#0
+	bne runthecodeimmediate
 
+// print debug message if the instruction is not "immediate
+//	push {r1}
+//	ldr r0,=notimmediatemsg
+//	add r1,#OFFSET_NAME
+//	bl printf
+//	pop {r1}
+	
 	// check for compile time here
 
+	ldr r0, =mode
+	ldr r0,[r0]
+	cmp r0, #0
+_compilecheck:	
+	beq runthecode
+
+	// print debug message if we are in compile time or not
+	push {r1}
+	ldr r0,=compilemsg
+	add r1,#OFFSET_NAME
+	bl printf
+	pop {r1}
+	
+	// compile time. Push the word link to HERE, increase HERE with 4
+	ldr r0,=freemem  // get HERE
+	ldr r0,[r0]
+	str r1,[r0]      // put word link on HERE
+	add r0,#INTLEN   // increment HERE with INTLEN
+	ldr r2,=freemem
+	str r0,[r2]
+
+	// once stored, go to the end of the loop and start over again
+	b done
+
+compilemsg:
+	.asciz "Compiling %s...\n"
+
+notimmediatemsg:	
+	.asciz "Not immediate %s...\n"
+
+immediatemsg:	
+	.asciz "Immediate %s...\n"
+	.align 4
+
+runthecodeimmediate:
+	// print debug message if the instruction is "immediate"
+	push {r1}
+	ldr r0,=immediatemsg
+	add r1,#OFFSET_NAME
+	bl printf
+	pop {r1}	
 runthecode:
 	// here we shall run the actual code.
 	// the actual code is located at
@@ -163,14 +211,7 @@ handleforthword:
 	// which is a pointer to an actual word
 	add r1,#INTLEN
 	mov r14,r1
-
 	
-	// old code that we called if a word is written in forth
-	// due to the thumb architecture, this doesn't really work,
-	// unless we do a lot of annoying math while creating the word
-
-	
-forthword:
 	// r14 contains the pointer to the list of pointers to words
 	ldr r0,=wordptr
 	ldr r1,[r0]
@@ -187,14 +228,14 @@ forthword:
 
 	# -------------
 	
-	HEADER AAAAAAA, 7, 0, AAAAAAA
+	HEADER "AAAAAAA", 7, 0, AAAAAAA
 	ldr r0, =word_AAAAAAA
 	bl printf
 	DONE
 
 	# -------------	
 	
-	HEADER TOCK, 4, 0, TOCK
+	HEADER "TOCK", 4, 0, TOCK
 	ldr r0, =word_TOCK
 	bl printf
 	DONE
@@ -210,7 +251,7 @@ forthword:
 	
 	.endm
 	
-	HEADER WORDS, 5, 0 , WORDS
+	HEADER "WORDS", 5, 0 , WORDS
 	ldr r0, =firstword // get the pointer to the first word in the list
 	ldr r0, [r0]       // (and fetch the value)
 wordsloop:
@@ -241,7 +282,7 @@ skipprint:
 
 	# -------------		
 
-	HEADER TACK, 4, 0, TACK
+	HEADER "TACK", 4, 0, TACK
 	ldr r0, =word_TACK
 	bl printf
 	DONE
@@ -249,7 +290,7 @@ skipprint:
 	# --------------
 	# read a constant from the list of function calls
 	
-	HEADER LIT,3,0,LIT
+	HEADER "LIT",3,0,LIT
 	ldr r0, =wordptr  	// grab the next thing in the function list
 	ldr r1,[r0]
 	mov r2,r1
@@ -263,7 +304,7 @@ skipprint:
 	# ---- arithmetics ----
 	# multiply two numbers on the stack
 	
-	HEADER *,1,0,STAR
+	HEADER "*",1,0,STAR
 	KPOP
 	mov r1,r0
 	KPOP
@@ -273,7 +314,7 @@ skipprint:
 
 	# add...
 
-	HEADER +,1,0,PLUS
+	HEADER "+",1,0,PLUS
 	KPOP
 	mov r1,r0
 	KPOP
@@ -283,7 +324,7 @@ skipprint:
 
 	# subtract...
 
-	HEADER -,1,0,MINUS
+	HEADER "-",1,0,MINUS
 	KPOP
 	mov r1,r0
 	KPOP
@@ -293,7 +334,7 @@ skipprint:
 
 	# divide...
 	# using the hardware divider
-	HEADER /MOD,4,0,DIVMOD
+	HEADER "/MOD",4,0,DIVMOD
 	ldr r3,=SIO_BASE
 	KPOP
 	str r0, [r3, #SIO_DIV_SDIVISOR_OFFSET]
@@ -313,10 +354,10 @@ skipprint:
 	KPUSH
 	DONE
 
-	FHEADER /,1,0,SLASH
+	FHEADER "/",1,0,SLASH
 	.word DIVMOD, SWAP, DROP, 0
 
-	FHEADER MOD,3,0,MOD	
+	FHEADER "MOD",3,0,MOD	
 	.word DIVMOD, DROP, 0
 	
 
@@ -326,13 +367,13 @@ skipprint:
 
 	# ------- stack manipulation -------
 	
-	HEADER DUP,3,0,DUP
+	HEADER "DUP",3,0,DUP
 	KPOP
 	KPUSH
 	KPUSH
 	DONE
 
-	HEADER SWAP,4,0,SWAP
+	HEADER "SWAP",4,0,SWAP
 	KPOP
 	mov r1,r0
 	KPOP
@@ -343,15 +384,15 @@ skipprint:
 	KPUSH
 	DONE
 
-	FHEADER OVER,4,0,OVER
+	FHEADER "OVER",4,0,OVER
 	.word SWAP, DUP, ROT, SWAP
 	.word 0
 	
-	HEADER DROP,4,0,DROP
+	HEADER "DROP",4,0,DROP
 	KPOP
 	DONE
 
-	HEADER ROT,3,0,ROT
+	HEADER "ROT",3,0,ROT
 	KPOP
 	mov r1,r0
 	KPOP
@@ -370,7 +411,7 @@ skipprint:
 	
 	# ------ output -------	
 
-	HEADER .,1,0,DOT
+	HEADER ".",1,0,DOT
 	KPOP
 	ldr r2,=base
 	ldr r2,[r2]
@@ -387,26 +428,26 @@ _hex:
 	DONE
 
 	# print a char from ascii on the stack
-	HEADER EMIT,4,0,EMIT
+	HEADER "EMIT",4,0,EMIT
 	KPOP
 	bl putchar
 	DONE
 
 	# print a string from ascii pointed to by an item on the stack
-	HEADER TYPE,4,0,TYPE
+	HEADER "TYPE",4,0,TYPE
 	KPOP
 	bl printf
 	DONE
 	
-	FHEADER CR,2,0,CR
+	FHEADER "CR",2,0,CR
 	.word LIT,10,EMIT,0
 
-	FHEADER SPACE,5,0,SPACE
+	FHEADER "SPACE",5,0,SPACE
 	.word LIT,32,EMIT,0
 
 	# ------ memory manipulation ---------
 
-	HEADER HERE,4,0,HERE
+	HEADER "HERE",4,0,HERE
 	ldr r0,=freemem
 	ldr r0,[r0]
 	KPUSH
@@ -414,7 +455,7 @@ _hex:
 
 	# input handling
 
-	HEADER WORD,4,0,WORD
+	HEADER "WORD",4,0,WORD
 	// read from input buffer until space, enter, or zero is found.
 	// store the data at "HERE", leading with an integer (4 bytes) containing the number of bytes in the word
 	// this does not ensure that we are at an aligned boundary. Write a helper that secures that "freemem"
@@ -477,7 +518,7 @@ wcend:
 	# --------------------
 	# --- FIND ------------
 	
-	HEADER FIND,4,0,FIND
+	HEADER "FIND",4,0,FIND
 	// traverse the word linked list and see if we match what we have on the stack
 	// consume the length and the address of the word on the stack
 	KPOP
@@ -552,13 +593,13 @@ _roggens2:
 
 	# -- run a word pointed to by the topmost item on the stack
 	
-	HEADER EXECUTE,7,0,EXECUTE
+	HEADER "EXECUTE",7,0,EXECUTE
 	KPOP
 	mov pc,r0
 
 	# -- make a word placeholder
 	
-	HEADER CREATE,6,0,CREATE
+	HEADER "CREATE",6,0,CREATE
 	KPOP	
 	mov r1,r0 // length of the name
 	KPOP
@@ -619,28 +660,35 @@ _created:
 	DONE
 	
 	
-
-	HEADER HIDDEN,6,0,HIDDEN
+	# toggles the HIDDEN word flag
+	HEADER "HIDDEN",6,0,HIDDEN
 	KPOP
 	ldr r1,[r0,#OFFSET_FLAGS]
 	ldr r2,=FLAG_HIDDEN
 _o1:	
-	orr r1,r2
+	eor r1,r2
 _o2:	
 	str r1,[r0,#OFFSET_FLAGS]
 
 	DONE
 
-	FHEADER \:,1,0,COLON
+	FHEADER ":",1,0,COLON
 	.int LIT, 1, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
 	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
+	.int LBRAC			// go to compile mode
+	.int 0
+
+	FHEADER ";",1,FLAG_IMMEDIATE,SEMICOLON
+	.int LIT,0,COMMA	// add end of word marker
+	.int RBRAC		// end compile mode
+	.int LATEST,FETCH,HIDDEN // remove hidden flag
 	.int 0
 	
 	# ---- COMMA
 	
 	# push integer to HERE, increase HERE with integer length
 	
-	RAWHEADER ",",1,0,COMMA
+	HEADER ",",1,0,COMMA
 	ldr r1,=freemem
 	ldr r1,[r1]
 	KPOP
@@ -650,33 +698,33 @@ _o2:
 	str r1,[r0]
 	DONE
 
-	HEADER LATEST,6,0,LATEST
+	HEADER "LATEST",6,0,LATEST
 	ldr r0,=firstword
 	KPUSH
 	DONE
 
-	HEADER \@,1,0,FETCH
+	HEADER "@",1,0,FETCH
 	KPOP
 	ldr r0,[r0]
 	KPUSH
 	DONE
 
-	FHEADER DEMO,4,0,DEMO
+	FHEADER "DEMO",4,0,DEMO
 	.int LIT,7,LIT,3,DUP,LIT,1
 	.int DOT,DOT,DOT,DOT
 	.int 0
 	
-	FHEADER BASE,4,0,BASE
+	FHEADER "BASE",4,0,BASE
 	.int LIT,base
 	.int 0
 
-	HEADER ],1,FLAG_IMMEDIATE,RBRAC
+	HEADER "]",1,FLAG_IMMEDIATE,RBRAC
 	ldr r1,=0
 	ldr r0,=mode
 	str r1,[r0]
 	DONE
 
-	HEADER [,1,FLAG_IMMEDIATE,LBRAC
+	HEADER "[",1,FLAG_IMMEDIATE,LBRAC
 	ldr r1,=1
 	ldr r0,=mode
 	str r1,[r0]
@@ -691,14 +739,12 @@ hexnumber:
 	
 	.align 4		
 list:
-	.word WORDS,CR
-	.int LBRAC,LATEST, DUP, DOT, CR, FETCH, DOT, CR
-	.int WORD, CREATE           // fetch a word from the input buffer, create a dictionary entry for it
-	.int WORDS, CR
-	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
-	.int LATEST, DUP, DOT, CR, FETCH, DOT, CR
-	.int WORDS
-	.int HERE, DOT, CR
+	.word WORDS,CR   // display the built in words
+	.word COLON      // start a word which will be called DM if this works
+	.word DEMO       // can't use LIT here if we want it to compile good, need other handling in the builder for that
+	.word SEMICOLON  // end compile mode
+	.word WORDS      // ...which it doesn't do?
+	
 	.word 0
 
 _kpush:	
@@ -760,7 +806,7 @@ dbw:
 input:
 	.word buffer
 buffer:
-	.asciz "ABCDEF 10 5 DIV DOT"
+	.asciz "DM"
 	.align 4
 freemem:
 	.word endstack
