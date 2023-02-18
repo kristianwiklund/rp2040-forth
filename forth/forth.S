@@ -39,6 +39,10 @@ code_\label:
 
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
+	ldr r0,=debugflag
+	ldr r0, [r0]
+	cmp r0,#1
+	bne end_\label
 	ldr r0, =worddescstring
 	ldr r1, =word_\label
 	ldr r2, =flags_\label
@@ -46,6 +50,7 @@ code_\label:
 	ldr r3, =length_\label
 	ldr r3, [r3]	
 	bl printf
+end_\label:
 	.endm
 
 //goff:	
@@ -53,7 +58,7 @@ code_\label:
 	
 	.macro FHEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
-	.int 1 // signals that this is a forth-defined word
+	.int 0xfeedbeef // signals that this is a forth-defined word
 	.endm
 	
 	#define	OFFSET_FLAGS  (flags_WORDS-next_WORDS)
@@ -89,11 +94,11 @@ main:
 
 execute:	
 done:
-	ldr r0,=hexdebug
-	ldr r1,=wordptr
-	ldr r1,[r1]
-	bl printf
-
+//	ldr r0,=hexdebug
+//	ldr r1,=wordptr
+//	ldr r1,[r1]
+//	bl printf
+	
 	// execute the next word in the list, unless we are done executing words in the list
 	ldr r0, =wordptr
 	ldr r1,[r0]
@@ -107,102 +112,36 @@ _t1:
 	beq endoflist // end of the list handler
 
 
-	push {r1}             // push A
-	ldr r0,=runmsg
-	add r1,#OFFSET_NAME
-	bl printf
-    	pop {r1}              // pop A
+//	push {r1}             // push A
+//	ldr r0,=runmsg
+//	add r1,#OFFSET_NAME
+//	bl printf
+//  	pop {r1}              // pop A
 	
 	// r1 now contains the pointer to a structure containing the word, not the code as such
 	// hence, we can operate on r1 with offsets, BUT we also have to seek where the actual code is
 	// when we intend to execute it
 	
-	ldr r2,[r1, #OFFSET_FLAGS]
-	b runthecode
-//	push {r1} // push B
-//	ldr r0,=hexnumber
-//	bl printf
-//	pop {r1} // pop B
-	
-//	ldr r3,=FLAG_IMMEDIATE
-//	and r2,r3
-//	cmp r2,#0
-//	bne runthecodeimmediate
-
-// print debug message if the instruction is not "immediate
-
-
-//	ldr r0,=notimmediatemsg
-//	add r1,#OFFSET_NAME
-//	bl printf
-//    	pop {r1}
-	
-// check for compile time here
-
-//	ldr r0, =mode
-//	ldr r0,[r0]
-//	cmp r0, #0
-//_compilecheck:	
-//	beq runthecode
-
-//	// print debug message if we are in compile time or not
-//	push {r1} // push C
-//	ldr r0,=compilemsg
-//	add r1,#OFFSET_NAME
-//	bl printf
-//	pop {r1} pop C
-	
-//	// compile time. Push the word link to HERE, increase HERE with 4
-//	ldr r0,=freemem  // get HERE
-//	ldr r0,[r0]
-//	str r1,[r0]      // put word link on HERE
-//	add r0,#INTLEN   // increment HERE with INTLEN
-//	ldr r2,=freemem
-//	str r0,[r2]
-
-//	// once stored, go to the end of the loop and start over again
-//	b done
-
-compilemsg:
-	.asciz "Compiling %s...\n"
-
-runmsg:
-	.asciz "Running %s...\n"
-
-notimmediatemsg:	
-	.asciz "Not immediate %s...\n"
-
-immediatemsg:	
-	.asciz "Immediate %s...\n"
-	.align 4
-
-//runthecodeimmediate:
-	// we are executing in immediate mode.
-	// all subsequent instructions must continue executing in
-	// immediate mode, or things will fail horribly
-	
-	// which means that we need to remove any compile flags we have
-	// going on, and execute the rest of the descending commands
-	// in immediate...
-	
-	// print debug message if the instruction is "immediate"
-//	push {r1} // push D
-//	ldr r0,=immediatemsg
-//	add r1,#OFFSET_NAME
-//	bl printf
-//	pop {r1} // pop D
 runthecode:
-	// here we shall run the actual code.
 
+	// r1 contains the pointer to the start of the word,
+	// use the helper to get the start of the wordlist/code
 	bl get_code_offset
 	// now we have the pointer to the code list in r1
 
 	// load the first word of whatever we are pointing at
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
-	ldr r2,[r1]	
-	cmp r2,#1
+	ldr r2,[r1]
+_t6:
+	ldr r5,=0xfeedbeef
+	cmp r2,r5
 	beq handleforthword
+
+//	push {r1}
+//	ldr r0,=codedebugstring
+//	bl printf
+//	pop {r1}
 	
 	mov pc,r1 // jump to the next word in the list
 	
@@ -235,6 +174,19 @@ _t4:
 	###
 	##	strings
 
+compilemsg:
+	.asciz "Compiling %s...\n"
+
+runmsg:
+	.asciz "Running %s...\n"
+
+notimmediatemsg:	
+	.asciz "Not immediate %s...\n"
+
+immediatemsg:	
+	.asciz "Immediate %s...\n"
+	.align 4
+	
 	// helper to get the offset to the code from a pointer to a word
 get_code_offset:
 	// the actual code is located at
@@ -249,22 +201,26 @@ get_code_offset:
 	add r1, r3
 	add r1, #OFFSET_NAME
 	// pad the pointer to get to where the code is
-	add r1,#7
-	lsr r1,#3
-	lsl r1,#3
+	add r1,#15
+	lsr r1,#4
+	ldr r3,=16
+	mul r1,r3
 	pop {pc}
 	
 	// handle a word written in forth.
 	
-handleforthword:	
+handleforthword:
+//	push {r1}
+//	ldr r0,=forthwordstring
+//	bl printf
+//	pop {r1}
 	// start by bumping the address to the next item in the list,
 	// which is a pointer to an actual word
 	add r1,#INTLEN
-	
-	// r14 contains the pointer to the list of pointers to words
+
 	ldr r0,=wordptr
-	ldr r1,[r0]
-	push {r1}        // push item we want to execute when we are done with this word, to the stack
+	ldr r2,[r0]
+	push {r2}        // push item we want to execute when we are done with this word, to the stack
 
 	//sub r1, #1     // because $REASONS
 _t5:	
@@ -546,8 +502,8 @@ endloopzor:
 	ldr r0,=0
 	strb r0,[r1]
 	// debug code
-	ldr r0,=buffer
-	bl printf
+	//	ldr r0,=buffer
+	//	bl printf
 	// and return to whoever called us
 _tpret:
 	DONE
@@ -768,9 +724,10 @@ _cl2:
 	strb r3,[r5]
 	// now the tricky part, align HERE to instruction boundary
 
-	add r5,#7
-	lsr r5,#3
-	lsl r5,#3
+	add r5,#15
+	lsr r5,#4
+	ldr r3,=16
+	mul r5,r3
 	ldr r0,=freemem
 	str r5,[r0]
 _created:			
@@ -852,7 +809,7 @@ _o2:
 	.int WORD
 	.int FIND
 	.int EXECUTE
-	DONE
+	.int 0
 	
 
 hexnumber:
@@ -864,9 +821,6 @@ hexdebug:
 	.align 4		
 list:
 	.word PROMPT			// get text from the user
-//	.word WORD
-//	.word FIND
-//	.word EXECUTE
 	.word INTERPRET			// run the text
 	.word 0
 
@@ -919,8 +873,10 @@ worddescstring:
 	.asciz "<%s, flags=%x, length=%d>\n"
 debugnumber:
 	.asciz "[%d]"
-	
-
+codedebugstring:
+	.asciz "->%x\n"
+forthwordstring:
+	.asciz "forth word starting at %x\n"
 	.align 4
 dbw:
 	.word 0
@@ -942,7 +898,8 @@ base:
 	// compile or interpretation mode
 mode:
 	.word 0
-	
+debugflag:
+	.word 1
 firstword:
 	.word link
 
