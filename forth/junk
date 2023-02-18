@@ -1,0 +1,43 @@
+//	push {r1} // push B
+//	ldr r0,=hexnumber
+//	bl printf
+//	pop {r1} // pop B
+	
+//	ldr r3,=FLAG_IMMEDIATE
+//	and r2,r3
+//	cmp r2,#0
+//	bne runthecodeimmediate
+
+// print debug message if the instruction is not "immediate
+
+
+//	ldr r0,=notimmediatemsg
+//	add r1,#OFFSET_NAME
+//	bl printf
+//    	pop {r1}
+	
+// check for compile time here
+
+//	ldr r0, =mode
+//	ldr r0,[r0]
+//	cmp r0, #0
+//_compilecheck:	
+//	beq runthecode
+
+//	// print debug message if we are in compile time or not
+//	push {r1} // push C
+//	ldr r0,=compilemsg
+//	add r1,#OFFSET_NAME
+//	bl printf
+//	pop {r1} pop C
+	
+//	// compile time. Push the word link to HERE, increase HERE with 4
+//	ldr r0,=freemem  // get HERE
+//	ldr r0,[r0]
+//	str r1,[r0]      // put word link on HERE
+//	add r0,#INTLEN   // increment HERE with INTLEN
+//	ldr r2,=freemem
+//	str r0,[r2]
+
+//	// once stored, go to the end of the loop and start over again
+//	b done
