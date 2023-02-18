@@ -234,17 +234,6 @@ _t5:
 
 	# -------------
 	
-	HEADER "AAAAAAA", 7, 0, AAAAAAA
-	ldr r0, =word_AAAAAAA
-	bl printf
-	DONE
-
-	# -------------	
-	
-	HEADER "TOCK", 4, 0, TOCK
-	ldr r0, =word_TOCK
-	bl printf
-	DONE
 
 	# utility macros to move things on and off the value stack
 	# both operate on r0
@@ -263,7 +252,7 @@ _t5:
 wordsloop:
 	push {r0}          // push W1
 
-	// don't print hidden words
+	// do not print hidden words
 	ldr r1,[r0,#OFFSET_FLAGS]
 	ldr r2,=FLAG_HIDDEN 
 	cmp r1,r2
@@ -284,12 +273,6 @@ skipprint:
 	bl putchar
 	DONE
 
-	# -------------		
-
-	HEADER "TACK", 4, 0, TACK
-	ldr r0, =word_TACK
-	bl printf
-	DONE
 
 	# --------------
 	# read a constant from the list of function calls
