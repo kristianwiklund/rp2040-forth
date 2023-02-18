@@ -12,7 +12,6 @@
 	.macro DONE
 	ldr r0,=done
 	mov pc,r0
-//	b done
 	.ltorg  // allow a literal pool here
 	.endm
 
@@ -72,76 +71,103 @@ main:
 	ldr r0, =hellogoodmorning
 	bl printf
 
+	# execute the functions linked from "words"
+	ldr r0,=wordptr
+	ldr r1,=list
+	str r1,[r0]
+
+	ldr r0,=0
+	push {r0} // end of input exec marker
+	
+	
 	// present the interactive prompt
-	bl terminalprompt
+	//bl terminalprompt
 	
 
 	// remove immediate & compile logic from this function
-	
+
+
 execute:	
 done:
+	ldr r0,=hexdebug
+	ldr r1,=wordptr
+	ldr r1,[r1]
+	bl printf
+
 	// execute the next word in the list, unless we are done executing words in the list
 	ldr r0, =wordptr
 	ldr r1,[r0]
 	mov r2,r1
-
+_t2:	
 	add r1,#4   // increase the pointer one step
 	str r1,[r0]
+_t1:	
 	ldr r1,[r2]
 	cmp r1, #0
 	beq endoflist // end of the list handler
 
+
+	push {r1}             // push A
+	ldr r0,=runmsg
+	add r1,#OFFSET_NAME
+	bl printf
+    	pop {r1}              // pop A
+	
 	// r1 now contains the pointer to a structure containing the word, not the code as such
 	// hence, we can operate on r1 with offsets, BUT we also have to seek where the actual code is
 	// when we intend to execute it
 	
 	ldr r2,[r1, #OFFSET_FLAGS]
-
-//	push {r1}
+	b runthecode
+//	push {r1} // push B
 //	ldr r0,=hexnumber
 //	bl printf
-//	pop {r1}
+//	pop {r1} // pop B
 	
-	ldr r3,=FLAG_IMMEDIATE
-	and r2,r3
-	cmp r2,#0
-	bne runthecodeimmediate
+//	ldr r3,=FLAG_IMMEDIATE
+//	and r2,r3
+//	cmp r2,#0
+//	bne runthecodeimmediate
 
 // print debug message if the instruction is not "immediate
-//	push {r1}
+
+
 //	ldr r0,=notimmediatemsg
 //	add r1,#OFFSET_NAME
 //	bl printf
 //    	pop {r1}
 	
-	// check for compile time here
+// check for compile time here
 
-	ldr r0, =mode
-	ldr r0,[r0]
-	cmp r0, #0
-_compilecheck:	
-	beq runthecode
+//	ldr r0, =mode
+//	ldr r0,[r0]
+//	cmp r0, #0
+//_compilecheck:	
+//	beq runthecode
 
-	// print debug message if we are in compile time or not
-	push {r1}
-	ldr r0,=compilemsg
-	add r1,#OFFSET_NAME
-	bl printf
-	pop {r1}
+//	// print debug message if we are in compile time or not
+//	push {r1} // push C
+//	ldr r0,=compilemsg
+//	add r1,#OFFSET_NAME
+//	bl printf
+//	pop {r1} pop C
 	
-	// compile time. Push the word link to HERE, increase HERE with 4
-	ldr r0,=freemem  // get HERE
-	ldr r0,[r0]
-	str r1,[r0]      // put word link on HERE
-	add r0,#INTLEN   // increment HERE with INTLEN
-	ldr r2,=freemem
-	str r0,[r2]
+//	// compile time. Push the word link to HERE, increase HERE with 4
+//	ldr r0,=freemem  // get HERE
+//	ldr r0,[r0]
+//	str r1,[r0]      // put word link on HERE
+//	add r0,#INTLEN   // increment HERE with INTLEN
+//	ldr r2,=freemem
+//	str r0,[r2]
 
-	// once stored, go to the end of the loop and start over again
-	b done
+//	// once stored, go to the end of the loop and start over again
+//	b done
 
 compilemsg:
 	.asciz "Compiling %s...\n"
+
+runmsg:
+	.asciz "Running %s...\n"
 
 notimmediatemsg:	
 	.asciz "Not immediate %s...\n"
@@ -150,7 +176,7 @@ immediatemsg:
 	.asciz "Immediate %s...\n"
 	.align 4
 
-runthecodeimmediate:
+//runthecodeimmediate:
 	// we are executing in immediate mode.
 	// all subsequent instructions must continue executing in
 	// immediate mode, or things will fail horribly
@@ -160,11 +186,11 @@ runthecodeimmediate:
 	// in immediate...
 	
 	// print debug message if the instruction is "immediate"
-	push {r1}
-	ldr r0,=immediatemsg
-	add r1,#OFFSET_NAME
-	bl printf
-	pop {r1}	
+//	push {r1} // push D
+//	ldr r0,=immediatemsg
+//	add r1,#OFFSET_NAME
+//	bl printf
+//	pop {r1} // pop D
 runthecode:
 	// here we shall run the actual code.
 	// the actual code is located at
@@ -197,16 +223,26 @@ endoflist:
 	pop {r0}
 	cmp r0,#0
 	beq reallydone
-
+_t3:	
 	ldr r1,=wordptr
-	str r0,[r1]
+	str r0,[r1]      // store wordptr
 	b done
 	
 reallydone:	
 	ldr r0, =donemsg
 	bl printf
-bloop:	
-	b bloop
+bloop:
+
+	// execute the functions linked from "words"
+	ldr r0,=wordptr
+	ldr r1,=list
+_t4:	
+	str r1,[r0]       // store wordptr
+
+	ldr r0,=0
+	push {r0} // end of input exec marker
+
+	b execute
 
 	###
 	##	strings
@@ -217,15 +253,15 @@ handleforthword:
 	// start by bumping the address to the next item in the list,
 	// which is a pointer to an actual word
 	add r1,#INTLEN
-	mov r14,r1
 	
 	// r14 contains the pointer to the list of pointers to words
 	ldr r0,=wordptr
 	ldr r1,[r0]
-	push {r1}
-	mov r1, r14
+	push {r1}        // push item we want to execute when we are done with this word, to the stack
+
 	//sub r1, #1     // because $REASONS
-	str r1,[r0]
+_t5:	
+	str r1,[r0]      // store wordptr
 	DONE
 		
 
@@ -262,9 +298,7 @@ handleforthword:
 	ldr r0, =firstword // get the pointer to the first word in the list
 	ldr r0, [r0]       // (and fetch the value)
 wordsloop:
-	push {r0}
-	push {r0}
-	pop {r0}
+	push {r0}          // push W1
 
 	// don't print hidden words
 	ldr r1,[r0,#OFFSET_FLAGS]
@@ -278,7 +312,7 @@ wordsloop:
 	ldr r0,=' '        // then print a space
 	bl putchar
 skipprint:	
-	pop {r0}	   // recover the pointer to the next word
+	pop {r0}	   // pop W1, recver the pointer to the next word
 	ldr r0, [r0]       // (and fetch the value)
 	cmp r0, #0         // continue until we reach the end of the list
 	bne wordsloop
@@ -303,7 +337,7 @@ skipprint:
 	mov r2,r1
 
 	add r1,#4		// then increase the function list pointer and store it 
-	str r1,[r0]
+	str r1,[r0]		// store wordptr
 	ldr r0,[r2]		// r0 now contains the value we want to store on the stack
 	KPUSH			// and push it on the value stack
 	DONE
@@ -462,6 +496,66 @@ _hex:
 
 	# input handling
 
+	HEADER "PROMPT",6,0,PROMPT
+	// read from terminal, put in input buffer
+	// displays a prompt, reads text from stdin, puts it in "buffer"
+terminalprompt:
+	// we need to get rid of pre-existing garbage here
+//	bl flushserial
+
+	ldr r0,=0
+_fsl:	
+	bl getchar_timeout_us
+	cmp r0, #0
+	bge _fsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+	
+	ldr r0,='>'
+	bl putchar
+	ldr r0,=' '
+	bl putchar
+
+	// read from the terminal
+	// (cheating, with rpi library code)
+
+	ldr r1,=buffer
+
+loopzor:
+	push {r1}
+	
+	bl getchar
+	bl putchar // echo
+
+	pop {r1}
+
+	cmp r0,#'\n'
+	beq endloopzor
+
+	strb r0,[r1]
+	add r1,#1
+	
+	b loopzor
+
+endloopzor:
+	ldr r0,=0
+	strb r0,[r1]
+	// debug code
+	ldr r0,=buffer
+	bl printf
+	// and return to whoever called us
+_tpret:
+	DONE
+
+flushserial:
+	push {lr}  // push FSL
+	ldr r0,=0
+_ofsl:	
+	bl getchar_timeout_us
+	cmp r0, #0
+	bge _ofsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+	pop {pc}  // pop FSL
+
+	
+	
 	HEADER "WORD",4,0,WORD
 	// read from input buffer until space, enter, or zero is found.
 	// store the data at "HERE", leading with an integer (4 bytes) containing the number of bytes in the word
@@ -541,7 +635,7 @@ wcend:
 	ldr r0, [r0]       // (and fetch the value)
 findloop:
 	// go through the words		
-	push {r0}
+	push {r0}  // push FA
 	ldr r4,[r0,#OFFSET_LENGTH]
 
 	// match the length	
@@ -582,12 +676,12 @@ _roggens3:
 	//bl putchar
 
 	// cleanup and return
-	pop {r0}
+	pop {r0}  // push pointer to match to the value stack
 	KPUSH
 	DONE
 
 _nextfl:
-	pop {r0}	   // recover the pointer to the next word
+	pop {r0}	   // recover the pointer to the next word. FA
 	ldr r0, [r0]       // (and fetch the value)
 	cmp r0, #0         // continue until we reach the end of the list
 _roggens2:	
@@ -741,17 +835,14 @@ _o2:
 
 hexnumber:
 	.asciz "%x"
-	
+hexdebug:
+	.asciz "wordptr: %x\n"
 	
 	
 	.align 4		
 list:
-	.word WORDS,CR   // display the built in words
-	.word COLON      // start a word which will be called DM if this works
-	.word DEMO       // can't use LIT here if we want it to compile good, need other handling in the builder for that
-	.word SEMICOLON  // end compile mode
-	.word WORDS      // ...which it doesn't do?
-	
+	.word PROMPT
+	//	.word INTERPRETER
 	.word 0
 
 _kpush:	
@@ -806,8 +897,6 @@ debugnumber:
 	
 
 	.align 4
-wordptr:
-	.word 0
 dbw:
 	.word 0
 input:
@@ -844,6 +933,9 @@ stacktop:
 	.int 0
 endstack:
 	.align 4
+wordptr:
+	.word 0
+
 wordbuf:
 	.rept 32
 	.byte 0
