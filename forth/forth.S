@@ -481,6 +481,8 @@ _fsl:
 	// (cheating, with rpi library code)
 
 	ldr r1,=buffer
+	ldr r2,=input
+	str r1,[r2]
 
 loopzor:
 	push {r1}
@@ -532,7 +534,7 @@ _ofsl:
 	ldr r3,=input
 	ldr r0,[r3]
 	// for debugging
-	ldr r0,=buffer
+	//	ldr r0,=buffer
 
 	// check for NULL pointer, return if we are NULL
 	cmp r0,#0
