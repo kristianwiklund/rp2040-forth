@@ -601,6 +601,13 @@ wcend:
 	HEADER "FIND",4,0,FIND
 	// traverse the word linked list and see if we match what we have on the stack
 	// consume the length and the address of the word on the stack
+
+	bl findhelper
+	DONE
+
+	// there is a bug in this code, we should return the newest match, but we return the oldest
+findhelper:
+	push {lr}
 	KPOP
 	mov r1,r0 // length
 	KPOP
@@ -656,7 +663,7 @@ _roggens3:
 	// cleanup and return
 	pop {r0}  // push pointer to match to the value stack
 	KPUSH
-	DONE
+	pop {pc}
 
 _nextfl:
 	pop {r0}	   // recover the pointer to the next word. FA
@@ -666,7 +673,7 @@ _roggens2:
 	bne findloop
 	ldr r0,=0
 	KPUSH		   // nothing found, push 0
-	DONE
+	pop {pc}
 
 	
 
@@ -818,6 +825,8 @@ _o2:
 	str r1,[r0]
 	DONE
 
+	// ---------- interpreter ---------
+	
 	HEADER "INTERPRET",9,0,INTERPRET
 	// get words from input until exhausted
 	// run each word through execution
@@ -826,6 +835,19 @@ _o2:
 	bl wordhelper // drops word and length of word on the forth stack
 	bl findhelper // find the word, drops pointer or zero on the forth stack
 
+	// check if the word was found or not. If it was not found, we assume it is
+	// a literal and try to parse it
+
+	KPOP
+	cmp r0,#0
+	bne intexec
+
+intexec:
+	// send the word to execution
+	// this code is likely broken
+	mov r1,r0
+	bl get_code_offset
+	mov pc,r1
 	DONE
 	
 	
@@ -839,9 +861,7 @@ hexdebug:
 	
 	.align 4		
 list:
-	.word PROMPT			// get text from the user
 	.word INTERPRET			// run the text
-//	.word FIND
 //	.word EXECUTE
 	.word 0
 
