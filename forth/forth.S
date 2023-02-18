@@ -3,6 +3,10 @@
 	
 	.thumb_func
 	.global main
+	.global execute
+	.global buffer
+	.global endbuffer
+	
 	.cpu cortex-m0
 	
 	.macro DONE
@@ -67,15 +71,13 @@ main:
 	bl stdio_init_all
 	ldr r0, =hellogoodmorning
 	bl printf
-		
-	# execute the functions linked from "words"
-	ldr r0,=wordptr
-	ldr r1,=list
-	str r1,[r0]
 
-	ldr r0,=0
-	push {r0} // end of input exec marker
+	// present the interactive prompt
+	bl terminalprompt
+	
 
+	// remove immediate & compile logic from this function
+	
 execute:	
 done:
 	// execute the next word in the list, unless we are done executing words in the list
@@ -88,10 +90,6 @@ done:
 	ldr r1,[r2]
 	cmp r1, #0
 	beq endoflist // end of the list handler
-
-	// here, if we are in compile mode, we shall simply push the word to compile. Unless the word is in immediate mode, in which
-	// case we always shall execute it
-	// happily, we always get the code here... which means that we need to subtract an offset to check the flags
 
 	// r1 now contains the pointer to a structure containing the word, not the code as such
 	// hence, we can operate on r1 with offsets, BUT we also have to seek where the actual code is
@@ -815,7 +813,10 @@ dbw:
 input:
 	.word buffer
 buffer:
-	.asciz "DM"
+	.rept 200
+	.byte 0
+	.endr
+endbuffer:
 	.align 4
 freemem:
 	.word endstack

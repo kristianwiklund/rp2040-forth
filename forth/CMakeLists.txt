@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-ffunction-sections)
 pico_sdk_init()
 add_executable(forth
-forth.S
+forth.S terminal.S
 )
 pico_enable_stdio_uart(forth 1)
 pico_add_extra_outputs(forth)
