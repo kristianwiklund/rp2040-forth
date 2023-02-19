@@ -70,6 +70,7 @@ end_\label:
 	#define OFFSET_NAME   (word_WORDS-next_WORDS)
 	#define OFFSET_LENGTH (length_WORDS-next_WORDS)
 	#define INTLEN 	      (word_WORDS-length_WORDS)
+
 main:
 	// reset things
 
@@ -82,7 +83,7 @@ main:
 
 	# execute the functions linked from "words"
 	ldr r0,=wordptr
-	ldr r1,=list
+	ldr r1,=boot
 	str r1,[r0]
 
 	ldr r0,=0
@@ -208,14 +209,14 @@ _t3:
 	b done
 	
 reallydone:	
-	ldr r0, =donemsg
-	bl printf
+//	ldr r0, =donemsg
+//	bl printf
 bloop:
 
 	// restart the machine:
 	// execute the functions linked from "words"
 	ldr r0,=wordptr
-	ldr r1,=list
+	ldr r1,=boot
 	str r1,[r0]       // store wordptr
 
 	ldr r0,=0
@@ -223,6 +224,15 @@ bloop:
 
 	b execute
 
+isr_hardfault:	
+	ldr r0, =errormsg
+	bl printf
+	b main
+
+errormsg:
+	.asciz "HardFault - restarted"
+
+	
 	###
 	##	strings
 
@@ -473,6 +483,14 @@ _hex:
 
 	# input handling
 
+	HEADER "FLUSHSTDIN",10,0,FLUSHSTDIN
+	ldr r0,=0	
+_fss:			
+	bl getchar_timeout_us
+	cmp r0, #0
+	bge _fss  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+	DONE
+	
 	HEADER "PROMPT",6,0,PROMPT
 	// read from terminal, put in input buffer
 	// displays a prompt, reads text from stdin, puts it in "buffer"
@@ -538,6 +556,8 @@ _ofsl:
 	pop {pc}  // pop FSL
 
 	
+
+	// rewrite this to read from the input instead of from a tokenized row
 	
 	HEADER "WORD",4,0,WORD
 	// read from input buffer until space, enter, or zero is found.
@@ -588,12 +608,12 @@ wc2:
 	// increment the counter at memstart
 	add r5,#1
 	// debug, print the character
-	//		push {r0,r1,r2,r4,r5}
-	//		mov r0,r4
-	//	bl putchar
-	//	ldr r0,='-'
-	//	bl putchar
-	//	pop {r0,r1,r2,r4,r5}	
+	push {r0,r1,r2,r4,r5}
+	mov r0,r4
+	bl putchar
+	ldr r0,='-'
+	bl putchar
+	pop {r0,r1,r2,r4,r5}	
 	b wc1
 wcend:
 	ldr r4,=0
@@ -603,6 +623,13 @@ wcend:
 	mov r0,r5	
 	KPUSH
 	pop {pc}
+
+	# --- restart
+
+	HEADER "RESET",5,0,RESET
+	bl resetme
+	b main
+	DONE
 	
 	# --------------------
 	# --- FIND ------------
@@ -850,7 +877,8 @@ _o2:
 	// run each word through execution
 	// happy fun time
 
-	bl wordhelper // drops word and length of word on the forth stack
+	// we can reuse code from the forth words earlier defined:
+	bl newwordhelper // drops word and length of word on the forth stack
 	bl findhelper // find the word, drops pointer or zero on the forth stack
 
 _ind1:	
@@ -861,6 +889,13 @@ _ind1:
 	cmp r0,#0
 	bne intexec
 
+	// the string we got and couldn't find a word for is available in wordbuf
+	// try converting it to an integer
+
+	ldr r0,=wordbuf
+	bl atoi
+	KPUSH
+	
 	// do nothing if we cannot find the word. Should print some kind of annoying message and terminate,
 	// for now, we only terminate
 	DONE
@@ -879,6 +914,81 @@ intexec:
 _t5:	
 #	str r0,[r1]      // store new wordptr
 #	DONE
+
+	// read a word from stdin
+	
+newwordhelper:
+
+	push {lr}
+	
+	// start by discarding everything that is a newline, carriage return, space
+
+_nww_l1:	
+	bl getchar		
+	bl putchar // echo
+
+	cmp r0,#0
+	beq _nww_l1
+	cmp r0, #' '
+	beq _nww_l1
+	cmp r0, #'\n'
+	beq _nww_l1
+	cmp r0, #'\r'
+	beq _nww_l1
+
+	ldr r1,=wordbuf
+	
+	// read until we get a char we don't want
+_nww_l2:
+	strb r0,[r1]
+	add r1, #1
+	
+	push {r1}
+	bl getchar		
+	bl putchar // echo
+	pop {r1}
+	
+	cmp r0,#0
+	beq _nww_l2_end
+	cmp r0, #' '
+	beq _nww_l2_end
+	cmp r0, #'\n'
+	beq _nww_l2_end
+	cmp r0, #'\r'
+	beq _nww_l2_end
+
+ap:	
+	b _nww_l2
+	
+_nww_l2_end:
+	cmp r0,#'\r'
+	bne _nww_l3
+	push {r1}
+	ldr r0,='\n'
+	bl putchar
+	pop {r1}
+_nww_l3:	
+	ldr r0,=0
+	strb r0,[r1]
+
+	ldr r0,=wordbuf
+	KPUSH
+	sub r1,r0
+	mov r0,r1
+	KPUSH
+
+//	ldr r0,=debugwordmsg
+//	ldr r1,=wordbuf
+//	bl printf
+	
+	pop {pc}
+
+	// ---
+
+debugwordmsg:
+	.asciz "Token: %s\n"
+
+
 	
 
 hexnumber:
@@ -888,12 +998,13 @@ hexdebug:
 	
 	
 	.align 4		
-list:
-	.word PROMPT
+boot:
+//	.word PROMPT
 //	.word PROMPT
 //	.word WORD
 //	.word FIND
-//	.word EXECUTE
+	//	.word EXECUTE
+	.word FLUSHSTDIN
 	.word INTERPRET			// run the text
 //	.word EXECUTE
 	.int END
@@ -928,7 +1039,13 @@ resetme:
 	ldr r0,=link
 	ldr r1,=firstword
 	str r0,[r1]
+
+	ldr r0,=wordbuf
+	ldr r1,=wordptr
+	str r0,[r1]
+
 	pop {pc}
+
 	
 	###
 	## variables
@@ -967,7 +1084,7 @@ freemem:
 
 	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
 base:
-	.word 16
+	.word 10
 
 	// compile or interpretation mode
 mode:
