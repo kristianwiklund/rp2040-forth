@@ -874,11 +874,15 @@ interpreter:
 	
 litcompile:
 	push {r0}
-	ldr r0,=LIT   // pointer to the lit word
-	bl commahelper
-	pop {r0}
 	
+	ldr r0,=LIT   // pointer to the lit word
+	KPUSH
 	bl commahelper
+	
+	pop {r0}
+	KPUSH
+	bl commahelper
+	
 	ldr r0,=compiling
 	bl printf
 	
@@ -905,7 +909,9 @@ goimmediate:
 
 wordcompile:
 	// push r0 to HERE
+	KPUSH
 	bl commahelper
+	
 	ldr r0,=compiling
 	bl printf
 
