@@ -561,68 +561,9 @@ _ofsl:
 	
 	HEADER "WORD",4,0,WORD
 	// read from input buffer until space, enter, or zero is found.
-	// store the data at "HERE", leading with an integer (4 bytes) containing the number of bytes in the word
-	// this does not ensure that we are at an aligned boundary. Write a helper that secures that "freemem"
-	// is bumped to an aligned space
-	// load the pointer to the buffer
-	// r3 - input buffer pointer
-	// r5 - input length counter
-	// r1 - word buffer storage
-	bl wordhelper
+	bl newwordhelper
 	DONE
-	
-wordhelper:
-	push {lr}
-	ldr r3,=input
-	ldr r0,[r3]
-	// for debugging
-	//	ldr r0,=buffer
 
-	// check for NULL pointer, return if we are NULL
-	cmp r0,#0
-	bne wc0
-	KPUSH
-	KPUSH
-	pop {pc}
-wc0:	
-	ldr r1,=wordbuf  // get the address to the start of the wordbuf
-	ldr r5,=0	// zero length
-wc1:
-	ldrb r4,[r0]     // read the input character (a byte) from the buffer
-	add r0, #1	// increase the pointer
-	str r0, [r3]	// and store it back to memory to indicate that we have moved the buffer pointer
-	// then check if we are at the end of the word or not
-	cmp r4,#0
-	beq wcend
-	cmp r4, #' '
-	beq wcend
-	cmp r4, #'\n'
-	beq wcend
-	cmp r4, #'\r'
-	beq wcend
-
-wc2:
-	// save the retrieved character somewhere
-
-	strb r4,[r1,r5]      // store the character in the word buffer
-	// increment the counter at memstart
-	add r5,#1
-	// debug, print the character
-	push {r0,r1,r2,r4,r5}
-	mov r0,r4
-	bl putchar
-	ldr r0,='-'
-	bl putchar
-	pop {r0,r1,r2,r4,r5}	
-	b wc1
-wcend:
-	ldr r4,=0
-	strb r4,[r1,r5]
-	ldr r0,=wordbuf
-	KPUSH	
-	mov r0,r5	
-	KPUSH
-	pop {pc}
 
 	# --- restart
 
@@ -788,14 +729,31 @@ _cl2:
 	// terminate the string with a 0
 	ldr r3,=0
 	strb r3,[r5]
+	add r5, #1    // to not overwrite with filler (which we use for debugging...)
+	
 	// now the tricky part, align HERE to instruction boundary
 
+	mov r1,r5
+	
 	add r5,#15
 	lsr r5,#4
 	ldr r3,=16
 	mul r5,r3
 	ldr r0,=freemem
 	str r5,[r0]
+
+	// and pad the end of the word up to the code place with a very visible filler
+	ldr r3,=0xAA
+	ldr r2,=0xFF
+cloop:
+	strb r3,[r1]
+	eor r3,r2
+	add r1,#1
+	cmp r1,r5
+	bne cloop
+	
+	
+	// and we are good to go
 _created:			
 	DONE
 	
@@ -813,15 +771,17 @@ _o2:
 	DONE
 
 	FHEADER ":",1,0,COLON
-	.int LIT, 1, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
-	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
+	.int WORD
+	.int CREATE
+	.int LIT, 0xabadbeef, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
+	.int LATEST, FETCH, HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
 	.int END
 
 	FHEADER ";",1,FLAG_IMMEDIATE,SEMICOLON
 	.int LIT,0,COMMA	// add end of word marker
 	.int LBRAC		// end compile mode
-	.int LATEST,FETCH,HIDDEN // remove hidden flag
+	.int LATEST, FETCH, HIDDEN // remove hidden flag
 	.int END
 	
 	# ---- COMMA
@@ -881,7 +841,7 @@ commahelper:
 	// get words from input until exhausted
 	// run each word through execution
 	// happy fun time
-
+interpreter:	
 	// we can reuse code from the forth words earlier defined:
 	bl newwordhelper // drops word and length of word on the forth stack
 	bl findhelper // find the word, drops pointer or zero on the forth stack
@@ -895,7 +855,7 @@ commahelper:
 	
 	KPOP
 	cmp r0,#0
-	bne foundaword
+	bne foundaword // found something, go process it
 
 	// the string we got and couldn't find a word for is available in wordbuf
 	// try converting it to an integer
@@ -906,6 +866,7 @@ commahelper:
 	// note that a failed lookup and a failed conversion will result in a zero (0) value
 
 	ldr r1,=mode
+	ldr r1,[r1]
 	cmp r1,#1    // compile mode
 	beq litcompile
 	KPUSH
@@ -916,16 +877,27 @@ litcompile:
 	ldr r0,=LIT   // pointer to the lit word
 	bl commahelper
 	pop {r0}
-	bl commahelper	
-	DONE
+	
+	bl commahelper
+	ldr r0,=compiling
+	bl printf
+	
+	b interpreter
 	
 foundaword:	
 
 	// check immediate mode here
+
+	ldr r1,[r0,#OFFSET_FLAGS]
+	ldr r2,=FLAG_IMMEDIATE 
+	and r1,r2
+	bne goimmediate
 	
 	ldr r1,=mode
+	ldr r1,[r1]
 	cmp r1,#1
 	beq wordcompile
+	
 goimmediate:	
 	mov r1,r0
 	ldr r0,=runthecode
@@ -934,7 +906,10 @@ goimmediate:
 wordcompile:
 	// push r0 to HERE
 	bl commahelper
-	DONE
+	ldr r0,=compiling
+	bl printf
+
+	b interpreter
 	
 	
 	// read a word from stdin
@@ -1074,6 +1049,8 @@ resetme:
 
 	.data
 
+compiling:
+	.asciz " <C> "
 hellogoodmorning:	
 	.asciz "\n\n\nWelcome!\n\n"
 donemsg:
@@ -1137,5 +1114,5 @@ wordbuf:
 	.endr
 heap:
 	.rept 2000
-	.int 0
+	.int 0xaddaadba
 	.endr
