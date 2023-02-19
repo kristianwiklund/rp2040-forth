@@ -39,17 +39,18 @@ code_\label:
 
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
-	ldr r0,=debugflag
-	ldr r0, [r0]
-	cmp r0,#1
-	bne end_\label
-	ldr r0, =worddescstring
-	ldr r1, =word_\label
-	ldr r2, =flags_\label
-	ldr r2, [r2]
-	ldr r3, =length_\label
-	ldr r3, [r3]	
-	bl printf
+//	ldr r0,=debugflag
+//	ldr r0, [r0]
+//	cmp r0,#1
+//	bne end_\label
+//	ldr r0, =worddescstring
+//	ldr r1, =word_\label
+//	ldr r2, =flags_\label
+//	ldr r2, [r2]
+//	ldr r3, =length_\label
+//	ldr r3, [r3]
+//	ldr r4, =1
+//	bl printf
 end_\label:
 	.endm
 
@@ -58,7 +59,7 @@ end_\label:
 	
 	.macro FHEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
-	.int 0xfeedbeef // signals that this is a forth-defined word
+	.int 0xabadbeef // signals that this is a forth-defined word
 	.endm
 	
 	#define	OFFSET_FLAGS  (flags_WORDS-next_WORDS)
@@ -124,6 +125,31 @@ _t1:
 	
 runthecode:
 
+	ldr r0,=debugflag
+	ldr r0, [r0]
+	cmp r0,#1
+	bne _nodp1
+
+	push {r1}
+	push {r1}
+	ldr r0, =worddescstring
+	mov r2, r1
+	add r2, #OFFSET_FLAGS
+	ldr r2, [r2]
+	mov r3, r1
+	add r3, #OFFSET_LENGTH
+	ldr r3, [r3]
+	push {r1}
+	bl get_code_offset
+	ldr r4,[r1]
+	pop {r1}
+_fd:	
+	add r1, #OFFSET_NAME
+	
+	bl printf
+	pop {r1}
+_nodp1:	
+	
 	// r1 contains the pointer to the start of the word,
 	// use the helper to get the start of the wordlist/code
 	bl get_code_offset
@@ -132,9 +158,14 @@ runthecode:
 	// load the first word of whatever we are pointing at
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
+
+	// demo starts at 0xcd0
+	// demo_code starts at 0xcf0
+	// why do we get 0xce0 here?
+	
 	ldr r2,[r1]
 _t6:
-	ldr r5,=0xfeedbeef
+	ldr r5,=0xabadbeef
 	cmp r2,r5
 	beq handleforthword
 
@@ -144,6 +175,27 @@ _t6:
 //	pop {r1}
 	
 	mov pc,r1 // jump to the next word in the list
+
+	// handle a word written in forth.
+	
+handleforthword:
+	push {r1}
+	ldr r0,=forthwordstring
+	bl printf
+	pop {r1}
+	// start by bumping the address to the next item in the list,
+	// which is a pointer to an actual word
+	add r1,#INTLEN
+
+	ldr r0,=wordptr
+	ldr r2,[r0]
+	push {r2}        // push item we want to execute when we are done with this word, to the stack
+
+	str r1,[r0]      // store wordptr
+	DONE             // and run the word
+		
+
+
 	
 endoflist:
 	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt	
@@ -196,38 +248,18 @@ get_code_offset:
 	// get the length
 
 
-	push {lr}
+	push {r3,lr}
 	ldr r3, [r1,#OFFSET_LENGTH]
 	add r1, r3
+	add r1, #1  // null terminator of word name
 	add r1, #OFFSET_NAME
 	// pad the pointer to get to where the code is
 	add r1,#15
 	lsr r1,#4
 	ldr r3,=16
 	mul r1,r3
-	pop {pc}
+	pop {r3,pc}
 	
-	// handle a word written in forth.
-	
-handleforthword:
-//	push {r1}
-//	ldr r0,=forthwordstring
-//	bl printf
-//	pop {r1}
-	// start by bumping the address to the next item in the list,
-	// which is a pointer to an actual word
-	add r1,#INTLEN
-
-	ldr r0,=wordptr
-	ldr r2,[r0]
-	push {r2}        // push item we want to execute when we are done with this word, to the stack
-
-	//sub r1, #1     // because $REASONS
-_t5:	
-	str r1,[r0]      // store wordptr
-	DONE
-		
-
 	
 	# -------------
 	# a couple of test words
@@ -243,7 +275,6 @@ _t5:
 		
 	.macro KPUSH
 	bl _kpush
-	
 	.endm
 	
 	HEADER "WORDS", 5, 0 , WORDS
@@ -660,15 +691,17 @@ _roggens2:
 
 	
 
-	# -- run a word pointed to by the topmost item on the stack
-	
+	// -- run a word pointed to by the topmost item on the stack
+	// only works for non-forth-words
 	HEADER "EXECUTE",7,0,EXECUTE
 	KPOP
 	cmp r0,#0
 	beq _noexec
 	mov r1,r0
-	bl get_code_offset
-	mov pc,r1
+	ldr r0,=runthecode
+	mov pc,r0
+//	bl get_code_offset
+//	mov pc,r1
 _noexec:
 	DONE
 	
@@ -818,6 +851,7 @@ _o2:
 	bl wordhelper // drops word and length of word on the forth stack
 	bl findhelper // find the word, drops pointer or zero on the forth stack
 
+_ind1:	
 	// check if the word was found or not. If it was not found, we assume it is
 	// a literal and try to parse it
 
@@ -826,14 +860,15 @@ _o2:
 	bne intexec
 
 intexec:
-	// send the word to execution
-	// this code is likely broken
-	mov r1,r0
-	bl get_code_offset
-	mov pc,r1
+
+	ldr r0,=wordptr
+	ldr r2,[r0]
+	push {r2}        // push item we want to execute when we are done with this word, to the stack
+
+	//sub r1, #1     // because $REASONS
+_t5:	
+	str r1,[r0]      // store wordptr
 	DONE
-	
-	
 	
 
 hexnumber:
@@ -844,7 +879,11 @@ hexdebug:
 	
 	.align 4		
 list:
-	.word INTERPRET			// run the text
+	.word PROMPT
+	.word WORD
+	.word FIND
+	.word EXECUTE
+//	.word INTERPRET			// run the text
 //	.word EXECUTE
 	.word 0
 
@@ -894,7 +933,7 @@ numberstring:
 debugstring:
 	.asciz "<%s>\n"
 worddescstring:	
-	.asciz "<%s, flags=%x, length=%d>\n"
+	.asciz "<%s, flags=%x, length=%d, v=%x>\n"
 debugnumber:
 	.asciz "[%d]"
 codedebugstring:
