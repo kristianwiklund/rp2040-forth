@@ -162,9 +162,6 @@ _nodp1:
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
 
-	// demo starts at 0xcd0
-	// demo_code starts at 0xcf0
-	// why do we get 0xce0 here?
 	
 	ldr r2,[r1]
 _t6:
@@ -182,10 +179,10 @@ _t6:
 	// handle a word written in forth.
 	
 handleforthword:
-	push {r1}
-	ldr r0,=forthwordstring
-	bl printf
-	pop {r1}
+//	push {r1}
+//	ldr r0,=forthwordstring
+//	bl printf
+//	pop {r1}
 	// start by bumping the address to the next item in the list,
 	// which is a pointer to an actual word
 	add r1,#INTLEN
@@ -522,6 +519,8 @@ loopzor:
 endloopzor:
 	ldr r0,=0
 	strb r0,[r1]
+	ldr r0,='\n'
+	bl putchar
 	// debug code
 	//	ldr r0,=buffer
 	//	bl printf
@@ -825,7 +824,7 @@ _o2:
 
 	FHEADER "DEMO",4,0,DEMO
 	.int LIT,7,LIT,3,DUP,LIT,1
-	.int DOT,DOT,DOT,DOT
+	.int DOT,DOT,DOT,DOT, CR
 	.int END
 	
 	FHEADER "BASE",4,0,BASE
@@ -862,16 +861,24 @@ _ind1:
 	cmp r0,#0
 	bne intexec
 
+	// do nothing if we cannot find the word. Should print some kind of annoying message and terminate,
+	// for now, we only terminate
+	DONE
+	
 intexec:
 
-	ldr r0,=wordptr
-	ldr r2,[r0]
-	push {r2}        // push item we want to execute when we are done with this word, to the stack
+	mov r1,r0
+	ldr r0,=runthecode
+	mov pc,r0
+	
+#	ldr r1,=wordptr
+#	ldr r2,[r1]
+#	push {r2}        // push item we want to execute when we are done with this word, to the stack
 
 	//sub r1, #1     // because $REASONS
 _t5:	
-	str r1,[r0]      // store wordptr
-	DONE
+#	str r0,[r1]      // store new wordptr
+#	DONE
 	
 
 hexnumber:
@@ -883,10 +890,11 @@ hexdebug:
 	.align 4		
 list:
 	.word PROMPT
-	.word WORD
-	.word FIND
-	.word EXECUTE
-//	.word INTERPRET			// run the text
+//	.word PROMPT
+//	.word WORD
+//	.word FIND
+//	.word EXECUTE
+	.word INTERPRET			// run the text
 //	.word EXECUTE
 	.int END
 
@@ -930,7 +938,7 @@ resetme:
 hellogoodmorning:	
 	.asciz "\n\n\nWelcome!\n\n"
 donemsg:
-	.asciz "\nDone!\n"
+	.asciz "\nOK "
 numberstring:
 	.asciz "%d"
 debugstring:
@@ -965,7 +973,7 @@ base:
 mode:
 	.word 0
 debugflag:
-	.word 1
+	.word 0
 firstword:
 	.word link
 
