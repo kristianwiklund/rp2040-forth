@@ -19,6 +19,9 @@
 
 	#define FLAG_HIDDEN    0x1
 	#define FLAG_IMMEDIATE 0x2
+
+	#define END 0x0
+	
 	.set link,0
 	
 	.macro RAWHEADER word, wordlen, flags=0, label
@@ -139,7 +142,7 @@ runthecode:
 	mov r3, r1
 	add r3, #OFFSET_LENGTH
 	ldr r3, [r3]
-	push {r1}
+
 	bl get_code_offset
 	ldr r4,[r1]
 	pop {r1}
@@ -212,10 +215,10 @@ reallydone:
 	bl printf
 bloop:
 
+	// restart the machine:
 	// execute the functions linked from "words"
 	ldr r0,=wordptr
 	ldr r1,=list
-_t4:	
 	str r1,[r0]       // store wordptr
 
 	ldr r0,=0
@@ -404,7 +407,7 @@ skipprint:
 
 	FHEADER "OVER",4,0,OVER
 	.word SWAP, DUP, ROT, SWAP
-	.word 0
+	.int END
 	
 	HEADER "DROP",4,0,DROP
 	KPOP
@@ -787,13 +790,13 @@ _o2:
 	.int LIT, 1, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
 	.int LATEST, FETCH  , HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
-	.int 0
+	.int END
 
 	FHEADER ";",1,FLAG_IMMEDIATE,SEMICOLON
 	.int LIT,0,COMMA	// add end of word marker
 	.int LBRAC		// end compile mode
 	.int LATEST,FETCH,HIDDEN // remove hidden flag
-	.int 0
+	.int END
 	
 	# ---- COMMA
 	
@@ -823,11 +826,11 @@ _o2:
 	FHEADER "DEMO",4,0,DEMO
 	.int LIT,7,LIT,3,DUP,LIT,1
 	.int DOT,DOT,DOT,DOT
-	.int 0
+	.int END
 	
 	FHEADER "BASE",4,0,BASE
 	.int LIT,base
-	.int 0
+	.int END
 
 	HEADER "]",1,FLAG_IMMEDIATE,RBRAC
 	ldr r1,=1
@@ -885,7 +888,7 @@ list:
 	.word EXECUTE
 //	.word INTERPRET			// run the text
 //	.word EXECUTE
-	.word 0
+	.int END
 
 _kpush:	
         push {r1,r2,lr}
