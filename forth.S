@@ -829,6 +829,11 @@ _o2:
 	# push integer to HERE, increase HERE with integer length
 	
 	HEADER ",",1,0,COMMA
+	bl commahelper
+	DONE
+
+commahelper:
+	push {lr}
 	ldr r1,=freemem
 	ldr r1,[r1]
 	KPOP
@@ -836,8 +841,8 @@ _o2:
 	add r1,#INTLEN
 	ldr r0,=freemem
 	str r1,[r0]
-	DONE
-
+	pop {pc}
+	
 	HEADER "LATEST",6,0,LATEST
 	ldr r0,=firstword
 	KPUSH
@@ -881,40 +886,57 @@ _o2:
 	bl newwordhelper // drops word and length of word on the forth stack
 	bl findhelper // find the word, drops pointer or zero on the forth stack
 
-_ind1:	
+	// when we get here, we have found the word we are looking for
+	// now check if the word is an IMMEDIATE word, in which case we will jump
+	// directly to execution
+
 	// check if the word was found or not. If it was not found, we assume it is
 	// a literal and try to parse it
-
+	
 	KPOP
 	cmp r0,#0
-	bne intexec
+	bne foundaword
 
 	// the string we got and couldn't find a word for is available in wordbuf
 	// try converting it to an integer
 
 	ldr r0,=wordbuf
 	bl atoi
+
+	// note that a failed lookup and a failed conversion will result in a zero (0) value
+
+	ldr r1,=mode
+	cmp r1,#1    // compile mode
+	beq litcompile
 	KPUSH
-	
-	// do nothing if we cannot find the word. Should print some kind of annoying message and terminate,
-	// for now, we only terminate
 	DONE
 	
-intexec:
+litcompile:
+	push {r0}
+	ldr r0,=LIT   // pointer to the lit word
+	bl commahelper
+	pop {r0}
+	bl commahelper	
+	DONE
+	
+foundaword:	
 
+	// check immediate mode here
+	
+	ldr r1,=mode
+	cmp r1,#1
+	beq wordcompile
+goimmediate:	
 	mov r1,r0
 	ldr r0,=runthecode
 	mov pc,r0
+
+wordcompile:
+	// push r0 to HERE
+	bl commahelper
+	DONE
 	
-#	ldr r1,=wordptr
-#	ldr r2,[r1]
-#	push {r2}        // push item we want to execute when we are done with this word, to the stack
-
-	//sub r1, #1     // because $REASONS
-_t5:	
-#	str r0,[r1]      // store new wordptr
-#	DONE
-
+	
 	// read a word from stdin
 	
 newwordhelper:
