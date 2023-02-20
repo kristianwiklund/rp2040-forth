@@ -17,9 +17,9 @@
 
 # to create the built in words
 
-	#define FLAG_HIDDEN    0x1
-	#define FLAG_IMMEDIATE 0x2
-
+	#define FLAG_HIDDEN      0x1
+	#define FLAG_IMMEDIATE   0x2
+	#define FLAG_ONLYCOMPILE 0x4
 	#define END 0x0
 	
 	.set link,0
@@ -329,7 +329,7 @@ skipprint:
 	KPUSH			// and push it on the value stack
 	DONE
 
-	# ---- arithmetics ----
+	# ---- math ----
 	# multiply two numbers on the stack
 	
 	HEADER "*",1,0,STAR
@@ -387,9 +387,22 @@ skipprint:
 
 	FHEADER "MOD",3,0,MOD	
 	.word DIVMOD, DROP, 0
-	
 
-	# -------- end arithmetics -------
+	HEADER "<",1,0,LESSTHAN
+	KPOP
+	mov r1,r0
+	KPOP
+	cmp r1,r0
+	blt _lt
+	ldr r0,=1
+	KPUSH
+	DONE
+_lt:	
+	ldr r0,=0
+	KPUSH
+	DONE
+
+	# -------- end math -------
 
 
 
@@ -814,6 +827,43 @@ commahelper:
 	KPUSH
 	DONE
 
+	// pulls thing from stack. if thing is zero, jumps to
+	// the address in the next word in the list - otherwise, it discards it
+	HEADER "0BRANCH",7,FLAG_ONLYCOMPILE,ZBRANCH
+	// get the next word and bump the pointer
+	ldr r0,=wordptr
+	ldr r1,[r0] // where it points
+	ldr r2,[r1] // the next word
+	add r1,#4
+	str r1,[r0]
+
+	KPOP
+	cmp r0,#0
+	bne _zb1
+
+	ldr r0,=wordptr
+	str r2,[r0] // change where it points
+//	ldr r0,=hexnumber
+//	mov r1,r2
+//	bl printf
+_zb1:	
+	DONE
+
+	
+	FHEADER "BEGIN",5,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,BEGIN
+	.int HERE // drop return address on stack
+	.int END
+
+	FHEADER "UNTIL",5,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,UNTIL
+	// the stack contains where to jump if the condition is false
+	// start by compiling 0BRANCH to the HERE
+	.int LIT,ZBRANCH,COMMA
+	// then compile the word on the stack to HERE
+	.int COMMA
+	.int END
+
+	
+	
 	FHEADER "DEMO",4,0,DEMO
 	.int LIT,7,LIT,3,DUP,LIT,1
 	.int DOT,DOT,DOT,DOT, CR
@@ -883,8 +933,8 @@ litcompile:
 	KPUSH
 	bl commahelper
 	
-	ldr r0,=compiling
-	bl printf
+//	ldr r0,=compiling
+//	bl printf
 	
 	b interpreter
 	
@@ -912,8 +962,8 @@ wordcompile:
 	KPUSH
 	bl commahelper
 	
-	ldr r0,=compiling
-	bl printf
+//	ldr r0,=compiling
+//	bl printf
 
 	b interpreter
 	
@@ -995,7 +1045,7 @@ debugwordmsg:
 	
 
 hexnumber:
-	.asciz "%x"
+	.asciz "%x "
 hexdebug:
 	.asciz "wordptr: %x\n"
 	
@@ -1062,7 +1112,7 @@ hellogoodmorning:
 donemsg:
 	.asciz "\nOK "
 numberstring:
-	.asciz "%d"
+	.asciz "%d "
 debugstring:
 	.asciz "<%s>\n"
 worddescstring:	
