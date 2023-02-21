@@ -392,13 +392,13 @@ skipprint:
 	KPOP
 	mov r1,r0
 	KPOP
-	cmp r1,r0
+	cmp r0,r1
 	blt _lt
-	ldr r0,=1
+	ldr r0,=0
 	KPUSH
 	DONE
 _lt:	
-	ldr r0,=0
+	ldr r0,=1
 	KPUSH
 	DONE
 
@@ -827,6 +827,20 @@ commahelper:
 	KPUSH
 	DONE
 
+	HEADER "!",1,0,STORE
+	KPOP
+	mov r1,r0
+	KPOP
+	str r1,[r0]
+	DONE
+
+	HEADER "NOP",3,0,NOP
+	DONE
+
+	// ##########################
+	// loops and conditionals	
+
+	
 	// pulls thing from stack. if thing is zero, jumps to
 	// the address in the next word in the list - otherwise, it discards it
 	HEADER "0BRANCH",7,FLAG_ONLYCOMPILE,ZBRANCH
@@ -837,6 +851,7 @@ commahelper:
 	add r1,#4
 	str r1,[r0]
 
+	
 	KPOP
 	cmp r0,#0
 	bne _zb1
@@ -848,6 +863,15 @@ commahelper:
 //	bl printf
 _zb1:	
 	DONE
+
+	HEADER "BRANCH",6,FLAG_ONLYCOMPILE,BRANCH
+	ldr r0,=wordptr
+	ldr r1,[r0] // where it points
+	ldr r2,[r1] // the next word
+	str r2,[r0]
+	DONE
+	
+
 
 	
 	FHEADER "BEGIN",5,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,BEGIN
@@ -862,6 +886,110 @@ _zb1:
 	.int COMMA
 	.int END
 
+	FHEADER "IF",2,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,IF
+	.int LIT,ZBRANCH,COMMA // compile a zbranch
+	.int HERE              // drop "HERE" on the stack
+	.int LIT,0,COMMA       // compile a placeholder for the jump we do if we are not doing the IF code
+	.int END
+
+	FHEADER "ELSE",4,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,ELSE
+	// compile a placeholder jump to the stack, to finalize the ongoing branch
+	// then back-compile the new address to the previous placeholder
+	.int LIT,BRANCH,COMMA // A branch that we always take
+	.int HERE
+	.int LIT,0,COMMA // new placeholder to fill for the THEN
+	.int SWAP               // get the old address (put "IF NOT JUMP" on top)
+	.int HERE,STORE         // and make it jump here
+	.int END
+
+	FHEADER "THEN",4,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,THEN
+	.int HERE             // drop the address where we are to the stack
+	.int STORE	      // and put it in the placeholder we compiled earlier
+	.int LIT,NOP,COMMA    // something to land at
+	.int END
+
+
+	// locate a word and decompile it
+	HEADER "SEE",3,FLAG_IMMEDIATE,SEE // cannot be compiled
+	bl newwordhelper
+	bl findhelper
+
+	KPOP
+	cmp r0,#0
+	bne _seeword
+	DONE // circulate, nothing to see
+_seeword:	
+	// find the start of the code
+	mov r1,r0
+	bl get_code_offset
+	ldr r0,[r1]
+	ldr r2,=0xabadbeef 
+	cmp r0,r2
+	beq _disasmb
+	// assembler word
+	ldr r0,=asmmsg
+	bl printf
+	DONE
+_disasmb:
+	push {r1}
+	ldr r0,=forthmsg
+	bl printf
+	pop {r1}
+_disasm:
+	// run through the word until we find a zero
+	add r1,#INTLEN
+	ldr r0,[r1]
+	cmp r0,#0
+	beq _disasmend
+_tt1:	
+	// r0 contains the pointer to the word
+	// add the name offset, then print it
+	push {r0,r1}
+	add r0,#OFFSET_NAME
+	mov r2,r0
+	ldr r0,=codemsg
+	bl printf
+	pop {r0,r1}
+
+	// there are a  few special names
+
+	ldr r2,=ZBRANCH
+	cmp r0,r2
+	beq _printarg
+	
+	ldr r2,=LIT
+	cmp r0,r2
+	beq _printarg
+
+	ldr r2,=BRANCH
+	cmp r0,r2
+	beq _printarg
+	
+	b _disasm
+	
+_printarg:
+	add r1,#INTLEN
+	push {r0,r1}
+	ldr r0,[r1]
+	mov r1,r0
+	ldr r0,=argstr
+	bl printf
+	pop {r0,r1}
+	b _disasm
+	
+_disasmend:	
+	DONE
+	
+	
+asmmsg:
+	.asciz "0x%x: <asm>\n"
+codemsg:
+	.asciz "0x%x: %s\n"
+argstr:
+	.asciz "      = 0x%x\n"
+forthmsg:
+	.asciz "0x%x: <forth>\n"
+	
 	
 	
 	FHEADER "DEMO",4,0,DEMO
