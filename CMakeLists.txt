@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
+include_directories(.)
 project(forth_project C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-ffunction-sections)
 pico_sdk_init()
 add_executable(forth
-forth.S terminal.S
+forth.S terminal.S macros.inc
 )
 pico_enable_stdio_uart(forth 1)
 pico_add_extra_outputs(forth)
