@@ -1,3 +1,13 @@
+	# utility macros to move things on and off the value stack
+	# both operate on r0
+	.macro KPOP
+	bl _kpop
+	.endm
+		
+	.macro KPUSH
+	bl _kpush
+	.endm
+
 	.macro DONE
 	ldr r0,=done
 	mov pc,r0
@@ -29,6 +39,12 @@ word_\label:
 code_\label:
 	.endm
 
+	#define INTLEN 	      4
+
+	#define	OFFSET_FLAGS  INTLEN
+	#define OFFSET_NAME   (INTLEN*3)
+	#define OFFSET_LENGTH (INTLEN*2)
+
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
 //	ldr r0,=debugflag
@@ -54,9 +70,5 @@ end_\label:
 	.int 0xabadbeef // signals that this is a forth-defined word
 	.endm
 	
-	#define	OFFSET_FLAGS  (flags_WORDS-next_WORDS)
-//	#define OFFSET_CODE   (WORDS-next_WORDS)         // this... does not work, since the size of the ascii is all different.
-	#define OFFSET_NAME   (word_WORDS-next_WORDS)
-	#define OFFSET_LENGTH (length_WORDS-next_WORDS)
-	#define INTLEN 	      (word_WORDS-length_WORDS)
+
 
