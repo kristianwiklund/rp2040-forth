@@ -1,4 +1,5 @@
-	#include "macros.h"
+	# -*- mode: asm -*-
+#include "macros.h"
 
 	.global DOT,EMIT,TYPE,CR,SPACE
 	# ------ output -------	

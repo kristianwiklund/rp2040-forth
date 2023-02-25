@@ -1,5 +1,6 @@
-#include "hardware/regs/addressmap.h"
-#include "hardware/regs/sio.h"
+	# -*- mode: assembler -*-
+	#include "hardware/regs/addressmap.h"
+	#include "hardware/regs/sio.h"
 
 	.thumb_func
 	.global main, done, _kpop, _kpush
@@ -195,7 +196,8 @@ get_code_offset:
 
 	// split to other files, but have to be included due to macro magic
 	#include "compile.h"
-	
+	#include "terminal.h"
+	#include "output.h"
 	
 	
 	HEADER "WORDS", 5, 0 , WORDS

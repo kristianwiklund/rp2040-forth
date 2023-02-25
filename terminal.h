@@ -1,3 +1,4 @@
+	# -*- mode: asm -*-
 	#include "macros.h"
 	
 	.global terminalprompt
@@ -29,11 +30,13 @@ readlinehelper:
 
 	ldr r0,=0
 	
-	ldr r0,='>'
+	ldr r0,='o'
 	bl putchar
-	ldr r0,=' '
+	ldr r0,='k'
 	bl putchar
-
+	  ldr r0,='\n'
+	  bl putchar
+	  
 	// read from the terminal
 	// (cheating, with rpi library code)
 
@@ -61,12 +64,13 @@ loopzor:
 
 endloopzor:
 	// get rid of junk - in particular, old line endings that we have not chomped... 
-_fsl:	
+_fsl:
+  push {r1}
 	bl getchar_timeout_us
 	cmp r0, #0
 	bge _fsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
 
-	
+    pop {r1}
 	ldr r0,=0
 	strb r0,[r1]
 	ldr r0,='\n'
