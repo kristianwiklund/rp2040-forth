@@ -549,13 +549,9 @@ wordcompile:
 	
 	
 	
-	.align 4		
+	.align 4
+	// boot is the core loop we run to exec the interpreter
 boot:
-//	.word PROMPT
-//	.word PROMPT
-//	.word WORD
-//	.word FIND
-	//	.word EXECUTE
 	.word FLUSHSTDIN
 	.word INTERPRET			// run the text
 //	.word EXECUTE
@@ -639,8 +635,11 @@ wordbuf:
 	.byte 0
 	.endr
 
+forthdefs:
+	.asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"
+	.align 4
 inputptr:	
-	.word buffer
+	.word forthdefs
 buffer:
 	.rept 200
 	.byte 0

@@ -181,9 +181,11 @@ _mgcretry:
 
 	ldr r3,=buffer		// check if the pointer is the start of
 	cmp r2,r3		// the buffer.
-	bne _mgc2		// no, we have something in the buffer that we work with
+	bne _mgc2		// no, we have something ongoing that we already work with
+
+	// buffer is empty, read something to the buffer
 	push {r1,r2}
-	bl readlinehelper	// buffer is empty, read something to the buffer
+	bl readlinehelper	
 	pop {r1,r2}
 _mgc2:	
 	ldrb r0,[r2]		// the next character
@@ -192,8 +194,8 @@ _mgc2:
 	bne _mgc1		// continue feeding from the buffer
 
 	ldr r2,=buffer		// it is zero, set inputptr to the start
-	str r2,[r1]		// of the buffer, and return the zero to the caller
-	pop {r1,r2,r3,r4,pc}	// and return to the caller
+	str r2,[r1]		// of the buffer. This will force a terminal read on the next call.
+	pop {r1,r2,r3,r4,pc}	// Then return the zero to the caller
 	
 _mgc1:
 	add r2,#1		// then increase the pointer
