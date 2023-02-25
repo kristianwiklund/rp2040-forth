@@ -50,18 +50,20 @@ _sq1:
 	pop {r0}   // update the jump
 	
 	str r1,[r0]
-	
+
+	// compile the string pointer as literal
 	ldr r0,=LIT
-	KPUSH
-	
+	KPUSH	
 	bl commahelper
+	
 	mov r0,r5
 	KPUSH
 	bl commahelper
-	
-	ldr r0,=0  // end of word
-	KPUSH
-	bl commahelper
+
+
+//	ldr r0,=0  // end of word
+//	KPUSH
+//	bl commahelper
 	DONE
 	
 	
