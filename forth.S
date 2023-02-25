@@ -550,9 +550,16 @@ resetme:
 	###
 	## variables
 
+forthdefs:
+	#include "forthdefs.h"
+	.align 4
+
 	.data
 
 	.align 4
+	
+base:	
+	.word 10
 dbw:
 	.word 0
 	.align 4
@@ -587,9 +594,6 @@ wordbuf:
 	.byte 0
 	.endr
 
-forthdefs:
-	#include "forthdefs.h"
-	.align 4
 inputptr:	
 	.word forthdefs
 inputlen:
@@ -599,6 +603,8 @@ buffer:
 	.byte 0
 	.endr
 endbuffer:
+	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
+
 
 	// read a word from stdin
 	

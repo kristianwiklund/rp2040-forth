@@ -37,8 +37,5 @@ _hex:
 	.int END
 
 
-	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
-base:
-	.word 10
 
 	

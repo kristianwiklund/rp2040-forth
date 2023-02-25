@@ -25,11 +25,11 @@
 // "Variable" creates a placeholder to a memory location that we can read and write
 // create a named, normal word. add functionality to return the address to the storage
 // reserve storage space behind the final marker (which is a zero) 
-.ascii ": VARIABLE WORD CREATE ' LIT , HERE 8 + , 0 , 0 , ; IMMEDIATE "
+.ascii ": VARIABLE WORD CREATE LIT ' LIT , HERE 8 + , 0 , 0 , ; IMMEDIATE "
 
 // Similar mechanism for constant. Create a word, but instead of
 // reserving memory, we compile the constant from the top of the heap, into the word itself
-.ascii ": CONSTANT WORD CREATE ' LIT , , 0 , ; IMMEDIATE "
+.ascii ": CONSTANT WORD CREATE LIT ' LIT , , 0 , ; IMMEDIATE "
 
 // output
 .ascii ": CR 10 EMIT ; "

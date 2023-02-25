@@ -230,7 +230,7 @@ commahelper:
 	KPOP
 	mov r1,r0
 	KPOP
-	str r1,[r0]
+	str r0,[r1]
 	DONE
 
 	#
@@ -292,11 +292,11 @@ _zb1:
 	.int HERE
 	.int LIT,0,COMMA // new placeholder to fill for the THEN
 	.int SWAP               // get the old address (put "IF NOT JUMP" on top)
-	.int HERE,STORE         // and make it jump here
+	.int HERE,SWAP, STORE         // and make it jump here
 	.int END
 
 	FHEADER "THEN",4,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,THEN
-	.int HERE             // drop the address where we are to the stack
+	.int HERE, SWAP       // drop the address where we are to the stack
 	.int STORE	      // and put it in the placeholder we compiled earlier
 	.int LIT,NOP,COMMA    // something to land at
 	.int END
