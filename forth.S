@@ -191,10 +191,11 @@ get_code_offset:
 	pop {r3,pc}
 	
 	
-	# -------------
-	# a couple of test words
+//// ############## WORD DEFINITIONS ############################ ///	
 
-	# -------------
+	// split to other files, but have to be included due to macro magic
+	#include "compile.h"
+	
 	
 	
 	HEADER "WORDS", 5, 0 , WORDS
@@ -223,7 +224,6 @@ skipprint:
 	ldr r0,='\n'       // then finish with newline and return
 	bl putchar
 	DONE
-
 
 
 	# ---- math ----
@@ -349,8 +349,8 @@ _lt:
 
 	HEADER "RESET",5,0,RESET
 	bl resetme
-	b main
-	DONE
+	ldr r0,=main
+	mov pc,r0
 	
 	# --------------------
 	# --- FIND ------------

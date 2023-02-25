@@ -1,5 +1,8 @@
-	# utility macros to move things on and off the value stack
-	# both operate on r0
+#ifndef MACROS_H
+#define MACROS_H
+
+// utility macros to move things on and off the value stack
+// both operate on r0
 	.macro KPOP
 	bl _kpop
 	.endm
@@ -14,7 +17,7 @@
 	.ltorg  // allow a literal pool here
 	.endm
 
-# to create the built in words
+	  // to create the built in words
 
 	#define FLAG_HIDDEN      0x1
 	#define FLAG_IMMEDIATE   0x2
@@ -70,5 +73,5 @@ end_\label:
 	.int 0xabadbeef // signals that this is a forth-defined word
 	.endm
 	
-
+#endif
 

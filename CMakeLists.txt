@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-ffunction-sections)
 pico_sdk_init()
 add_executable(forth
-forth.S terminal.S macros.h output.S strings.S compile.S
+forth.S terminal.S macros.h output.S strings.S compile.h
 )
 pico_enable_stdio_uart(forth 1)
 pico_enable_stdio_usb(forth 0)
