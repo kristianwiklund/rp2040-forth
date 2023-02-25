@@ -12,6 +12,7 @@ Yes, and lots of them.
 Notably, there is no error handling at all. This is by design (as in - I haven't gotten around to fixing it yet). 
 Use an SWD adapter (picoprobe, jlink, ...) with gdb to avoid having to pull the plug all the time. You want one anyway, it makes life easier.
 
+It also hangs when using USB for serial. No idea why. I use an UART adapter when developing and haven't prioritized a fix.
 
 ## Implemented words
 
