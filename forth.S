@@ -8,7 +8,7 @@
 	.global newwordhelper, findhelper, get_code_offset, DUP, mode
 	.cpu cortex-m0
 	
-#include "macros.inc"
+#include "macros.h"
 	
 
 	

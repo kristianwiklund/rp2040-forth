@@ -1,4 +1,4 @@
-	#include "macros.inc"
+	#include "macros.h"
 
 	.global DOT,EMIT,TYPE,CR,SPACE
 	# ------ output -------	
