@@ -4,7 +4,7 @@
 	.global LIT, commahelper
 
 
-	FHEADER "STATE",5,FLAG_IMMEDIATE,STATE
+	FHEADER "STATE",5,0,STATE
 	.word LIT,mode,FETCH,0
 	
 	# -- make a word placeholder
@@ -120,11 +120,9 @@ _o2:
 	cmp r0,#0
 	beq _tickrun
 	
-	// in compiling mode, we simply dump a "LIT" in the word we're building, and it will pull the
-	// correct pointer from the next address when executing
-
-	ldr r0,=LIT
-	KPUSH
+	// compiling mode
+	bl newwordhelper
+	bl findhelper
 	bl commahelper
 	DONE
 	
@@ -158,6 +156,7 @@ _tickrun:
 	bl commahelper
 	DONE
 
+	
 commahelper:
 	push {lr}
 	ldr r1,=freemem
@@ -174,6 +173,30 @@ commahelper:
 	KPUSH
 	DONE
 
+	// same as comma, but for characters. causes "freemem" to become unaligned
+	HEADER "c,",2,0,CCOMMA
+	ldr r1,=freemem
+	ldr r1,[r1]
+	KPOP
+	strb r0,[r1]
+	add r1,#1
+	ldr r0,=freemem
+	str r1,[r0]
+	DONE
+
+	// align the free space pointer
+	HEADER "ALIGN",5,0,ALIGN
+	ldr r0,=freemem
+	ldr r5,[r0]
+	
+	add r5,#3
+	lsr r5,#2
+	ldr r3,=4
+	mul r5,r3
+
+	str r5,[r0]
+	DONE
+	
 
 	# --------------
 	# read a constant from the list of function calls
@@ -347,6 +370,10 @@ _tt1:
 	ldr r2,=BRANCH
 	cmp r0,r2
 	beq _printarg
+
+	ldr r2,=SKIPSTRING
+	cmp r0,r2
+	beq _printstring
 	
 	b _disasm
 	
@@ -358,6 +385,25 @@ _printarg:
 	ldr r0,=argstr
 	bl printf
 	pop {r0,r1}
+	b _disasm
+
+_printstring:
+	add r1,#INTLEN
+	push {r0,r1}
+	ldr r0,[r1]
+	mov r1,r0
+	ldr r0,=argstr
+	bl printf
+	pop {r0,r1}
+	push {r0,r1}
+	add r1,#INTLEN
+	ldr r0,=argstrstr
+_psb1:	
+	bl printf
+	pop {r0,r1}
+	ldr r1,[r1] // new pointer (skip the string)
+	sub r1,#INTLEN
+	
 	b _disasm
 	
 _disasmend:	
@@ -385,4 +431,10 @@ _disasmend:
 	str r1,[r0]
 	DONE
 
+	HEADER "SKIPSTRING",10,0,SKIPSTRING
+	ldr r0, =wordptr  	// grab the next thing in the function list
+	ldr r1,[r0]
+	ldr r1,[r1]		// and move the pointer to it
+	str r1,[r0]
+	DONE
 	

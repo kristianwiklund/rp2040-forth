@@ -21,7 +21,6 @@
 
 // conditionals and compilation
 .ascii ": BEGIN HERE ; IMMEDIATE "
-.ascii ": LITERAL ' LIT , , ; IMMEDIATE"
 
 // "Variable" creates a placeholder to a memory location that we can read and write
 // create a named, normal word. add functionality to return the address to the storage
@@ -36,8 +35,18 @@
 .ascii ": CR 10 EMIT ; "
 .ascii ": SPACE 32 EMIT ; "
 
-// test word
+// ." have two different behaviors. If in exec mode, it prints the string, if in compile mode, it compiles code to print the string
+.ascii ": .\" STATE 0= IF BEGIN KEY DUP DUP 34 <> IF EMIT ELSE DROP THEN 34 = UNTIL " // this is the interpreting behavior
+.ascii " ELSE 0 ' IF S\" ' THEN ' TYPE "
+.ascii "THEN ; IMMEDIATE " // word end
+
+.ascii ": SMACK S\" ; IMMEDIATE "
+.ascii ": B SMACK 12345678\" ; "
+
+// test word - this must end the file
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"
+
+
 
 
 

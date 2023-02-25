@@ -290,8 +290,6 @@ skipprint:
 	bl findhelper
 	DONE
 
-	// there is a bug in this code, we should return the newest match, but we return the oldest
-	// also, seems like we get a return to whatevs sometimes...
 findhelper:
 	push {lr}
 	KPOP
@@ -594,6 +592,8 @@ forthdefs:
 	.align 4
 inputptr:	
 	.word forthdefs
+inputlen:
+	.int 0
 buffer:
 	.rept 200
 	.byte 0

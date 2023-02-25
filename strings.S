@@ -2,7 +2,7 @@
 	.global compiling, hellogoodmorning, donemsg, numberstring
 	.global debugstring,worddescstring,debugnumber,codedebugstring,forthwordstring
 	.global debugwordmsg, hexnumber, hexdebug, finddebugstring, findlendebugstring
-	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg
+	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
 	###
 	##	strings
 
@@ -12,6 +12,8 @@ codemsg:
 	.asciz "0x%x: %s\n"
 argstr:
 	.asciz "      = 0x%x\n"
+argstrstr:
+	.asciz "      = <%s>\n"
 forthmsg:
 	.asciz "0x%x: <forth>\n"
 immediatedecompilemsg:
