@@ -197,8 +197,8 @@ get_code_offset:
 	// split to other files, but have to be included due to macro magic
 	#include "compile.h"
 	#include "terminal.h"
-	#include "output.h"
-	
+	#include "output.h"	
+	#include "math.h"
 	
 	HEADER "WORDS", 5, 0 , WORDS
 	ldr r0, =firstword // get the pointer to the first word in the list
@@ -226,77 +226,6 @@ skipprint:
 	ldr r0,='\n'       // then finish with newline and return
 	bl putchar
 	DONE
-
-
-	# ---- math ----
-	# multiply two numbers on the stack
-	
-	HEADER "*",1,0,STAR
-	KPOP
-	mov r1,r0
-	KPOP
-	MUL r0,r1
-	KPUSH
-	DONE
-
-	# add...
-
-	HEADER "+",1,0,PLUS
-	KPOP
-	mov r1,r0
-	KPOP
-	add r0,r1
-	KPUSH
-	DONE
-
-	# subtract...
-
-	HEADER "-",1,0,MINUS
-	KPOP
-	mov r1,r0
-	KPOP
-	sub r0,r1
-	KPUSH
-	DONE
-
-	# divide...
-	# using the hardware divider
-	HEADER "/MOD",4,0,DIVMOD
-	ldr r3,=SIO_BASE
-	KPOP
-	str r0, [r3, #SIO_DIV_SDIVISOR_OFFSET]
-	KPOP
-	str r0, [r3, #SIO_DIV_SDIVIDEND_OFFSET	]
-
-	// delay 8 cycles
-
-	b 1f
-1: 	b 1f	
-1: 	b 1f
-1: 	b 1f
-1:
-	ldr r0, [r3, #SIO_DIV_REMAINDER_OFFSET]
-	KPUSH
-	ldr r0, [r3, #SIO_DIV_QUOTIENT_OFFSET]
-	KPUSH
-	DONE
-
-	HEADER "<",1,0,LESSTHAN
-	KPOP
-	mov r1,r0
-	KPOP
-	cmp r0,r1
-	blt _lt
-	ldr r0,=0
-	KPUSH
-	DONE
-_lt:	
-	ldr r0,=1
-	KPUSH
-	DONE
-
-	# -------- end math -------
-
 
 
 	# ------- stack manipulation -------
@@ -381,37 +310,37 @@ findhelper:
 findloop:
 	// go through the words
 
-	// debug
-	push {r0,r1,r2}
-	ldr r1,=debugflag
-	ldr r1,[r1]
-	cmp r1,#1
-	bne _nodebugfh
+	//	debug
+	//push {r0,r1,r2}
+	//ldr r1,=debugflag
+	//ldr r1,[r1]
+	//cmp r1,#1
+	//bne _nodebugfh
 
-	add r0,#OFFSET_NAME
-	mov r1,r0
-	ldr r0,=finddebugstring
-	bl printf
-_nodebugfh:	
-	pop {r0,r1,r2}
+	//add r0,#OFFSET_NAME
+	//mov r1,r0
+	//ldr r0,=finddebugstring
+	//bl printf
+//_nodebugfh:	
+	//pop {r0,r1,r2}
 
 	
 	push {r0}  // push FA
 	ldr r4,[r0,#OFFSET_LENGTH]
 
 	// debug - print the word lengths
-	push {r0,r1,r2,r3,r4}
-	ldr r3,=debugflag
-	ldr r3,[r3]
-	cmp r3,#1
-	bne _nodebugfh2
+	//push {r0,r1,r2,r3,r4}
+	//ldr r3,=debugflag
+	//ldr r3,[r3]
+	//cmp r3,#1
+	//bne _nodebugfh2
 
-	mov r2,r4
-	ldr r0,=findlendebugstring
-	bl printf
+	//mov r2,r4
+	//ldr r0,=findlendebugstring
+	//bl printf
 	
-_nodebugfh2:	
-	pop {r0,r1,r2,r3,r4}
+//_nodebugfh2:	
+	//pop {r0,r1,r2,r3,r4}
 	
 	// match the length	
 	cmp r4,r1  // then compare to the word we have on the stack

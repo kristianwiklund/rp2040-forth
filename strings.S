@@ -1,10 +1,24 @@
-	.global errormsg, compilemsg, runmsg, notimmediatemsg, immediatemsg
+	.global errormsg, compilemsg, runmsg, notimmediatemsg, immediatedecompilemsg
 	.global compiling, hellogoodmorning, donemsg, numberstring
 	.global debugstring,worddescstring,debugnumber,codedebugstring,forthwordstring
 	.global debugwordmsg, hexnumber, hexdebug, finddebugstring, findlendebugstring
+	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg
 	###
 	##	strings
 
+asmmsg:
+	.asciz "0x%x: <asm>\n"
+codemsg:
+	.asciz "0x%x: %s\n"
+argstr:
+	.asciz "      = 0x%x\n"
+forthmsg:
+	.asciz "0x%x: <forth>\n"
+immediatedecompilemsg:
+	.asciz "-> (immediate)\n"
+
+
+	
 debugwordmsg:
 	.asciz "Token: %s\n"
 

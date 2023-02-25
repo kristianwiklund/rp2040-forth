@@ -3,7 +3,11 @@
 	
 	.global LIT, commahelper
 
-		# -- make a word placeholder
+
+	FHEADER "STATE",5,FLAG_IMMEDIATE,STATE
+	.word LIT,mode,FETCH,0
+	
+	# -- make a word placeholder
 	
 	HEADER "CREATE",6,0,CREATE
 	KPOP	
@@ -67,6 +71,9 @@ _cl2:
 	mul r5,r3
 	ldr r0,=freemem
 	str r5,[r0]
+	
+	cmp r1,r5
+	beq _created // nothing to pad
 
 	// and pad the end of the word up to the code place with a very visible filler
 	ldr r3,=0xAA
@@ -79,8 +86,17 @@ cloop:
 	bne cloop
 	
 	
-	// and we are good to go
-_created:			
+
+	// add a forth marker, increase the memory pointer
+	// and we are good to go	
+_created:
+	ldr r0,=freemem
+	ldr r1,[r0]
+	ldr r2,=0xabadbeef
+	str r2,[r1]
+	add r1,#INTLEN
+	str r1,[r0]
+	
 	DONE
 	
 	
@@ -96,10 +112,34 @@ _o2:
 
 	DONE
 
+	HEADER "'",1,FLAG_IMMEDIATE,TICK
+	ldr r0,=mode
+	ldr r0,[r0]
+
+	// two different behaviors if we are in compiling or executing mode
+	cmp r0,#0
+	beq _tickrun
+	
+	// in compiling mode, we simply dump a "LIT" in the word we're building, and it will pull the
+	// correct pointer from the next address when executing
+
+	ldr r0,=LIT
+	KPUSH
+	bl commahelper
+	DONE
+	
+_tickrun:
+	// executing mode
+	bl newwordhelper
+	bl findhelper
+	DONE
+	
+	
+	
+	
 	FHEADER ":",1,0,COLON
 	.int WORD
-	.int CREATE
-	.int LIT, 0xabadbeef, COMMA          // this compiles a "1" into the word which indicates to the system that it is defined in forth, not assembler
+	.int CREATE                 // creates a header for a forth word including the marker
 	.int LATEST, FETCH, HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
 	.int END
@@ -172,7 +212,7 @@ commahelper:
 
 	#
 
-		// ##########################
+	// ##########################
 	// loops and conditionals	
 
 	
@@ -257,7 +297,7 @@ _seeword:
 	beq _see2
 	
 	push {r0}
-	ldr r0,=immediatemsg
+	ldr r0,=immediatedecompilemsg
 	bl printf
 	pop {r0}
 _see2:	
@@ -323,17 +363,6 @@ _printarg:
 _disasmend:	
 	DONE
 	
-asmmsg:
-	.asciz "0x%x: <asm>\n"
-codemsg:
-	.asciz "0x%x: %s\n"
-argstr:
-	.asciz "      = 0x%x\n"
-forthmsg:
-	.asciz "0x%x: <forth>\n"
-immediatemsg:
-	.asciz "-> (immediate)\n"
-
 	// set the immediate flag
 	HEADER "IMMEDIATE",9,FLAG_IMMEDIATE,IMMEDIATE
 	ldr r0,=firstword
@@ -356,3 +385,4 @@ immediatemsg:
 	str r1,[r0]
 	DONE
 
+	

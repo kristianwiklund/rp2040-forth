@@ -8,6 +8,12 @@
 
 	# input handling
 
+	// read one character from input (if the input is redirected to a block of text and not using terminal input, we read from that place)
+	HEADER "KEY",3,0,KEY
+	bl mygetchar
+	KPUSH
+	DONE
+	
 	HEADER "FLUSHSTDIN",10,0,FLUSHSTDIN
 	ldr r0,=0	
 _fss:			
@@ -34,8 +40,8 @@ readlinehelper:
 	bl putchar
 	ldr r0,='k'
 	bl putchar
-	  ldr r0,='\n'
-	  bl putchar
+	ldr r0,='\n'
+	bl putchar
 	  
 	// read from the terminal
 	// (cheating, with rpi library code)
