@@ -1,4 +1,4 @@
-	# -*- mode: asm -*-
+//	# -*- mode: asm -*-
 	#include "macros.h"
 	
 	.global LIT, commahelper

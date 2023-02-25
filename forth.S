@@ -198,7 +198,7 @@ get_code_offset:
 	#include "compile.h"
 	#include "terminal.h"
 	#include "output.h"	
-	#include "math.h"
+	#include "mathwords.h"
 	
 	HEADER "WORDS", 5, 0 , WORDS
 	ldr r0, =firstword // get the pointer to the first word in the list
