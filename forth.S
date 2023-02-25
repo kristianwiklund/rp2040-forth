@@ -281,12 +281,6 @@ skipprint:
 	KPUSH
 	DONE
 
-	FHEADER "/",1,0,SLASH
-	.word DIVMOD, SWAP, DROP, 0
-
-	FHEADER "MOD",3,0,MOD	
-	.word DIVMOD, DROP, 0
-
 	HEADER "<",1,0,LESSTHAN
 	KPOP
 	mov r1,r0
@@ -324,10 +318,6 @@ _lt:
 	KPUSH
 	DONE
 
-	FHEADER "OVER",4,0,OVER
-	.word SWAP, DUP, ROT, SWAP
-	.int END
-	
 	HEADER "DROP",4,0,DROP
 	KPOP
 	DONE
@@ -372,6 +362,7 @@ _lt:
 	DONE
 
 	// there is a bug in this code, we should return the newest match, but we return the oldest
+	// also, seems like we get a return to whatevs sometimes...
 findhelper:
 	push {lr}
 	KPOP
@@ -385,16 +376,47 @@ findhelper:
 
 	ldr r0, =firstword // get the pointer to the first word in the list
 	ldr r0, [r0]       // (and fetch the value)
+
+	
 findloop:
-	// go through the words		
+	// go through the words
+
+	// debug
+	push {r0,r1,r2}
+	ldr r1,=debugflag
+	ldr r1,[r1]
+	cmp r1,#1
+	bne _nodebugfh
+
+	add r0,#OFFSET_NAME
+	mov r1,r0
+	ldr r0,=finddebugstring
+	bl printf
+_nodebugfh:	
+	pop {r0,r1,r2}
+
+	
 	push {r0}  // push FA
 	ldr r4,[r0,#OFFSET_LENGTH]
 
+	// debug - print the word lengths
+	push {r0,r1,r2,r3,r4}
+	ldr r3,=debugflag
+	ldr r3,[r3]
+	cmp r3,#1
+	bne _nodebugfh2
+
+	mov r2,r4
+	ldr r0,=findlendebugstring
+	bl printf
+	
+_nodebugfh2:	
+	pop {r0,r1,r2,r3,r4}
+	
 	// match the length	
 	cmp r4,r1  // then compare to the word we have on the stack
 _roggens:			
 	bne _nextfl // jump to the next part if it does not match
-
 
 _roggens5:
 	// if r5 is zero when we are done, we have a match
@@ -410,8 +432,10 @@ _findtestloop:
 	ldrb r0,[r6,r3]
 _roggens4:
 	// compare strings
-	sub r7,r0
-	add r5,r7
+	cmp r7,r0
+	beq _rg1
+	add r5,#1
+_rg1:	
 
 	add r3,#1
 	cmp r3,r1
@@ -431,6 +455,7 @@ _roggens3:
 	KPUSH
 	pop {pc}
 
+	// this is not a match, continue
 _nextfl:
 	pop {r0}	   // recover the pointer to the next word. FA
 	ldr r0, [r0]       // (and fetch the value)
@@ -636,7 +661,7 @@ wordbuf:
 	.endr
 
 forthdefs:
-	.asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"
+	#include "forthdefs.h"
 	.align 4
 inputptr:	
 	.word forthdefs

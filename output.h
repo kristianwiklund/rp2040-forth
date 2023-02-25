@@ -32,12 +32,6 @@ _hex:
 	bl printf
 	DONE
 	
-	FHEADER "CR",2,0,CR
-	.word LIT,10,EMIT,0
-
-	FHEADER "SPACE",5,0,SPACE
-	.word LIT,32,EMIT,0
-
 	FHEADER "BASE",4,0,BASE
 	.int LIT,base
 	.int END

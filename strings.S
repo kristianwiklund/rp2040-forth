@@ -1,7 +1,7 @@
 	.global errormsg, compilemsg, runmsg, notimmediatemsg, immediatemsg
 	.global compiling, hellogoodmorning, donemsg, numberstring
 	.global debugstring,worddescstring,debugnumber,codedebugstring,forthwordstring
-	.global debugwordmsg, hexnumber, hexdebug
+	.global debugwordmsg, hexnumber, hexdebug, finddebugstring, findlendebugstring
 	###
 	##	strings
 
@@ -23,6 +23,10 @@ numberstring:
 	.asciz "%d "
 debugstring:
 	.asciz "<%s>\n"
+finddebugstring:
+	.asciz "find: %s\n"
+findlendebugstring:
+	.asciz "length: %d vs %d\n"
 worddescstring:	
 	.asciz "<%s, flags=%x, length=%d, v=%x>\n"
 debugnumber:
