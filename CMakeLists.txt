@@ -10,5 +10,6 @@ add_executable(forth
 forth.S terminal.S macros.h output.S strings.S compile.S
 )
 pico_enable_stdio_uart(forth 1)
+pico_enable_stdio_usb(forth 0)
 pico_add_extra_outputs(forth)
 target_link_libraries(forth pico_stdlib pico_bootsel_via_double_reset)

@@ -3,17 +3,13 @@
 
 	.thumb_func
 	.global main, done, _kpop, _kpush
-	.global wordptr, firstword, freemem
+	.global wordptr, firstword, freemem, inputptr, buffer
 	.global WORD, SWAP,NOP
-	.global newwordhelper, findhelper, get_code_offset, DUP, mode
+	.global findhelper, get_code_offset, DUP, mode, wordbuf
 	.cpu cortex-m0
 	
 #include "macros.h"
 	
-
-	
-
-
 main:
 	// reset things
 
@@ -550,77 +546,6 @@ wordcompile:
 	b interpreter
 	
 	
-	// read a word from stdin
-	
-newwordhelper:
-
-	push {lr}
-	
-	// start by discarding everything that is a newline, carriage return, space
-
-_nww_l1:	
-	bl getchar		
-	bl putchar // echo
-
-	cmp r0,#0
-	beq _nww_l1
-	cmp r0, #' '
-	beq _nww_l1
-	cmp r0, #'\n'
-	beq _nww_l1
-	cmp r0, #'\r'
-	beq _nww_l1
-
-	ldr r1,=wordbuf
-	
-	// read until we get a char we don't want
-_nww_l2:
-	strb r0,[r1]
-	add r1, #1
-	
-	push {r1}
-	bl getchar		
-	bl putchar // echo
-	pop {r1}
-	
-	cmp r0,#0
-	beq _nww_l2_end
-	cmp r0, #' '
-	beq _nww_l2_end
-	cmp r0, #'\n'
-	beq _nww_l2_end
-	cmp r0, #'\r'
-	beq _nww_l2_end
-
-ap:	
-	b _nww_l2
-	
-_nww_l2_end:
-	cmp r0,#'\r'
-	bne _nww_l3
-	push {r1}
-	ldr r0,='\n'
-	bl putchar
-	pop {r1}
-_nww_l3:	
-	ldr r0,=0
-	strb r0,[r1]
-
-	ldr r0,=wordbuf
-	KPUSH
-	sub r1,r0
-	mov r0,r1
-	KPUSH
-
-//	ldr r0,=debugwordmsg
-//	ldr r1,=wordbuf
-//	bl printf
-	
-	pop {pc}
-
-	// ---
-
-	
 	
 	.align 4		
 boot:
@@ -684,7 +609,6 @@ dbw:
 freemem:
 	.word heap
 
-
 	// compile or interpretation mode
 mode:
 	.word 0
@@ -712,6 +636,18 @@ wordbuf:
 	.rept 32
 	.byte 0
 	.endr
+
+inputptr:	
+	.word buffer
+buffer:
+	.rept 200
+	.byte 0
+	.endr
+endbuffer:
+
+	// read a word from stdin
+	
+
 heap:
 	.rept 2000
 	.int 0xaddaadba
