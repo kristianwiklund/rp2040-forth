@@ -3,9 +3,22 @@
 	.global debugstring,worddescstring,debugnumber,codedebugstring,forthwordstring
 	.global debugwordmsg, hexnumber, hexdebug, finddebugstring, findlendebugstring
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
+	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring
+	
 	###
 	##	strings
 
+callstackfullstring:
+	.asciz "(info) Forth call stack overflow.\n"
+
+callstackemptystring:		
+	.asciz "(info) Forth call stack underflow.\n"
+
+stacktracestring:
+	.asciz "Call Trace:\n===========\nStack start: 0x%x\nStack ptr  : 0x%x\n"
+stacktracenullstring:
+	.asciz "0x%x: (NULL)\n"
+	
 asmmsg:
 	.asciz "0x%x: <asm>\n"
 codemsg:

@@ -10,7 +10,8 @@
 	.cpu cortex-m0
 	
 #include "macros.h"
-	
+
+
 main:
 	// reset things
 
@@ -43,8 +44,12 @@ done:
 //	ldr r1,=wordptr
 //	ldr r1,[r1]
 //	bl printf
-	
+
+	// we are done executing the current word, remove it from the list
+	bl popforthcall	
 	// execute the next word in the list, unless we are done executing words in the list
+
+	
 	ldr r0, =wordptr
 	ldr r1,[r0]
 	mov r2,r1
@@ -56,6 +61,8 @@ _t1:
 	cmp r1, #0
 	beq endoflist // end of the list handler
 
+	// record the word in the forth call stack
+	bl pushforthcall
 
 //	push {r1}             // push A
 //	ldr r0,=runmsg
@@ -158,9 +165,12 @@ bloop:
 	ldr r0,=wordptr
 	ldr r1,=boot
 	str r1,[r0]       // store wordptr
-
+	bl pushforthcall
 	ldr r0,=0
 	push {r0} // end of input exec marker
+	// record it in the list
+//	mov r1,r0
+//	bl pushforthcall
 
 	b execute
 
@@ -227,6 +237,11 @@ skipprint:
 	bl putchar
 	DONE
 
+	# access to debug flag
+	# a variable
+	FHEADER "DEBUG", 9, 0, DEBUGFLAG
+	.word LIT,debugflag
+	.word END
 
 	# ------- stack manipulation -------
 	
@@ -498,6 +513,47 @@ wordcompile:
 //	bl printf
 
 	b interpreter
+
+	
+	// print a stacktrace of the calls from where we are to the first 0
+	HEADER "ST",2,0,STACKTRACE
+	// start with the stack pointer, read each item, move up until we have a zero
+	ldr r0, =stacktracestring
+	ldr r1,=forthframestackstart
+	ldr r2,=forthframestackptr
+	ldr r2,[r2]
+	bl printf
+	
+	ldr r7,=forthframestackptr
+	ldr r7,[r7]
+_stl1:
+	ldr r1,[r7] // pointer to somewhere in a list
+	cmp r1,#0
+	bne _stl2
+
+	push {r7}
+	ldr r0,=stacktracenullstring
+	mov r1,r7
+	bl printf
+	b _strl3
+_stl2:
+
+	ldr r1,[r1] // actual pointer to a word
+	
+	mov r2,r1
+	add r2,#OFFSET_NAME
+	mov r1,r7
+	ldr r0,=codemsg
+	push {r7}
+	bl printf
+_strl3:				
+	pop {r7}
+	sub r7,#4
+	ldr r6,=forthframestackstart
+	cmp r7,r6
+	bge _stl1
+	DONE
+	
 	
 	
 	
@@ -544,9 +600,66 @@ resetme:
 	ldr r1,=wordptr
 	str r0,[r1]
 
+	ldr r0,=cpustacktop
+	mov r1,sp
+	str r1,[r0]
+
+	ldr r0,=forthframestackptr
+	ldr r1,=forthframestackstart
+	str r1,[r0]
+	
 	pop {pc}
 
+	// two subroutines to store where we are in the execution
+	// (call trace)
+	// note that this stack grows upwards. Makes debugging easier
+	// r1 contains the pointer to the word we want to store
+pushforthcall:
+	push {r5,r6,r7,lr}
+	ldr r7,=forthframestackptr
+	ldr r6,[r7]			// stack pointer
+	ldr r5,=forthframestackend
+	cmp r6,r5
+	ble _pfc1
+
+	// stack is overflowing, print info message
+	push {r0,r1,r2,r3}
+	ldr r0,=callstackfullstring
+	bl printf
+	pop {r0,r1,r2,r3}
+	pop {r5,r6,r7,pc}	
+
+_pfc1:	
+	str r1,[r6]
+	add r6,#4			// move pointer
+	str r6,[r7]
+	pop {r5,r6,r7,pc}	
+
+	// this doesn't return anything right now
+popforthcall:
+	push {r5,r6,r7,lr}
+	ldr r7,=forthframestackptr
+	ldr r6,[r7]			// stack pointer
+
+	ldr r5,=forthframestackstart
+	cmp r6,r5
+	bge _pfc2
+
+	// stack is underflowing, print info message
+	// message is noisy and not really needed _right now_, ignore and return
+	// however, this should really not happen...
+	//	push {r0,r1,r2,r3}
+	//	ldr r0,=callstackemptystring
+	//	bl printf
+	//	pop {r0,r1,r2,r3}
+	pop {r5,r6,r7,pc}	
+
 	
+_pfc2:	
+	sub r6,#4
+	str r6,[r7]			// simple discard
+	pop {r5,r6,r7,pc}	
+		
 	###
 	## variables
 
@@ -584,6 +697,8 @@ stackbottom:
 	.endr
 stacktop:
 	.int 0
+cpustacktop:
+	.int 0
 endstack:
 	.align 4
 wordptr:
@@ -597,7 +712,16 @@ wordbuf:
 inputptr:	
 	.word forthdefs
 inputlen:
-	.int 0
+       .int  0
+forthframestackstart:
+       .rept 100
+       .word 0
+       .endr
+forthframestackend:
+	.word 0
+forthframestackptr:
+       .word forthframestackstart
+	      
 buffer:
 	.rept 200
 	.byte 0
