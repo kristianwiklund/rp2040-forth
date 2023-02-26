@@ -13,6 +13,7 @@
 	.endm
 
 	.macro DONE
+	bl popforthcall
 	ldr r0,=done
 	mov pc,r0
 	.ltorg  // allow a literal pool here
@@ -23,9 +24,10 @@
 	#define FLAG_HIDDEN      0x1
 	#define FLAG_IMMEDIATE   0x2
 	#define FLAG_ONLYCOMPILE 0x4
+	#define FLAG_INVISIBLE   0x8 // not listed in WORDS listing
 	#define END 0x0
 	
-	.set link,0
+	.set link,0  // magically increasing linked list pointer
 	
 	.macro RAWHEADER word, wordlen, flags=0, label
 	.align 4
@@ -51,6 +53,8 @@ code_\label:
 
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
+	ldr r1,=\label
+//	bl pushforthcall
 //	ldr r0,=debugflag
 //	ldr r0, [r0]
 //	cmp r0,#1

@@ -3,7 +3,7 @@
 	.global debugstring,worddescstring,debugnumber,codedebugstring,forthwordstring
 	.global debugwordmsg, hexnumber, hexdebug, finddebugstring, findlendebugstring
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
-	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring
+	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	
 	###
 	##	strings
@@ -17,12 +17,13 @@ callstackemptystring:
 stacktracestring:
 	.asciz "Call Trace:\n===========\nStack start: 0x%x\nStack ptr  : 0x%x\n"
 stacktracenullstring:
-	.asciz "0x%x: (NULL)\n"
+	.asciz " 0x%x: (NULL)\n"
+callstackmsg:		
+	.asciz " 0x%x: (0x%x) %s\n"
 	
 asmmsg:
 	.asciz "0x%x: <asm>\n"
-codemsg:
-	.asciz "0x%x: %s\n"
+
 argstr:
 	.asciz "      = 0x%x\n"
 argstrstr:
@@ -31,7 +32,8 @@ forthmsg:
 	.asciz "0x%x: <forth>\n"
 immediatedecompilemsg:
 	.asciz "-> (immediate)\n"
-
+codemsg:
+	.asciz "0x%x: %s\n"
 
 	
 debugwordmsg:

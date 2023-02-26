@@ -27,9 +27,9 @@ main:
 	ldr r1,=boot
 	str r1,[r0]
 
+	
 	ldr r0,=0
 	push {r0} // end of input exec marker
-	
 	
 	// present the interactive prompt
 	//bl terminalprompt
@@ -45,10 +45,7 @@ done:
 //	ldr r1,[r1]
 //	bl printf
 
-	// we are done executing the current word, remove it from the list
-	bl popforthcall	
 	// execute the next word in the list, unless we are done executing words in the list
-
 	
 	ldr r0, =wordptr
 	ldr r1,[r0]
@@ -61,8 +58,6 @@ _t1:
 	cmp r1, #0
 	beq endoflist // end of the list handler
 
-	// record the word in the forth call stack
-	bl pushforthcall
 
 //	push {r1}             // push A
 //	ldr r0,=runmsg
@@ -99,7 +94,10 @@ _fd:
 	
 	bl printf
 	pop {r1}
-_nodp1:	
+_nodp1:
+	// when we are here, we will execute a word written in assembler
+	// record this in the call graph
+//	bl pushforthcall
 	
 	// r1 contains the pointer to the start of the word,
 	// use the helper to get the start of the wordlist/code
@@ -138,22 +136,27 @@ handleforthword:
 	ldr r0,=wordptr
 	ldr r2,[r0]
 	push {r2}        // push item we want to execute when we are done with this word, to the stack
-
+	
 	str r1,[r0]      // store wordptr
+	mov r1,r2
+	// when we are here, we will execute a word written in forth
+	// record the call in the call trace
+//	bl pushforthcall
+//	bl pushforthcall // reasons. - to keep a trace once we pop the trace in DONE
 	DONE             // and run the word
 		
 
 
 	
 endoflist:
-	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt	
+	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt
 	pop {r0}
 	cmp r0,#0
 	beq reallydone
 _t3:	
 	ldr r1,=wordptr
 	str r0,[r1]      // store wordptr
-	b done
+	DONE
 	
 reallydone:	
 //	ldr r0, =donemsg
@@ -165,7 +168,7 @@ bloop:
 	ldr r0,=wordptr
 	ldr r1,=boot
 	str r1,[r0]       // store wordptr
-	bl pushforthcall
+
 	ldr r0,=0
 	push {r0} // end of input exec marker
 	// record it in the list
@@ -216,12 +219,18 @@ get_code_offset:
 wordsloop:
 	push {r0}          // push W1
 
-	// do not print hidden words
-	ldr r1,[r0,#OFFSET_FLAGS]
+	// do not print hidden or invisible words
+	ldr r3,[r0,#OFFSET_FLAGS]
+	mov r1,r3
 	ldr r2,=FLAG_HIDDEN 
-	cmp r1,r2
-	beq skipprint
-	
+	and r1,r2
+	bne skipprint
+
+	mov r1,r3
+	ldr r2,=FLAG_INVISIBLE
+	and r1,r2
+	bne skipprint
+
 	add r0,#OFFSET_NAME	   
 	bl printf	   // print the word
 	
@@ -239,7 +248,7 @@ skipprint:
 
 	# access to debug flag
 	# a variable
-	FHEADER "DEBUG", 9, 0, DEBUGFLAG
+	FHEADER "DEBUG", 5, 0, DEBUGFLAG
 	.word LIT,debugflag
 	.word END
 
@@ -516,7 +525,7 @@ wordcompile:
 
 	
 	// print a stacktrace of the calls from where we are to the first 0
-	HEADER "ST",2,0,STACKTRACE
+	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE // disabled
 	// start with the stack pointer, read each item, move up until we have a zero
 	ldr r0, =stacktracestring
 	ldr r1,=forthframestackstart
@@ -524,34 +533,36 @@ wordcompile:
 	ldr r2,[r2]
 	bl printf
 	
-	ldr r7,=forthframestackptr
-	ldr r7,[r7]
+	ldr r7,=forthframestackstart
+//	ldr r7,[r7]
 _stl1:
 	ldr r1,[r7] // pointer to somewhere in a list
 	cmp r1,#0
 	bne _stl2
-
+	
 	push {r7}
 	ldr r0,=stacktracenullstring
 	mov r1,r7
 	bl printf
+	pop {r7}
 	b _strl3
 _stl2:
 
 	ldr r1,[r1] // actual pointer to a word
-	
+	mov r3,r1
+	add r3,#OFFSET_NAME
 	mov r2,r1
-	add r2,#OFFSET_NAME
 	mov r1,r7
-	ldr r0,=codemsg
+	ldr r0,=callstackmsg
 	push {r7}
 	bl printf
-_strl3:				
 	pop {r7}
-	sub r7,#4
-	ldr r6,=forthframestackstart
+_strl3:				
+	add r7,#4
+	ldr r6,=forthframestackptr
+	ldr r6,[r6]
 	cmp r7,r6
-	bge _stl1
+	ble _stl1
 	DONE
 	
 	

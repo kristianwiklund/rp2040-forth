@@ -73,7 +73,7 @@ _sq1:
 	KPUSH
 	DONE
 	
-	HEADER "FLUSHSTDIN",10,0,FLUSHSTDIN
+	HEADER "FLUSHSTDIN",10,FLAG_INVISIBLE,FLUSHSTDIN
 	ldr r0,=0	
 _fss:			
 	bl getchar_timeout_us
