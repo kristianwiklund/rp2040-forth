@@ -289,6 +289,21 @@ skipprint:
 	mov r0,r3
 	KPUSH
 	DONE
+
+	// constants to get the state of the stack
+	// fetch the current stack pointer
+	HEADER "SP@",3,0,SPFETCH
+	ldr r0,=stackptr
+	ldr r0,[r0]
+	KPUSH
+	DONE
+
+	// fetch the initial stack pointer
+	HEADER "SP0",3,0,SP0
+	ldr r0,=stacktop
+	KPUSH
+	DONE
+	
 	
 	# --- restart
 
@@ -321,6 +336,29 @@ findhelper:
 	KPOP
 	mov r2,r0 // pointer
 
+	// check for NULL pointer and terminate if we get one
+	cmp r2,#0
+	bne _fh1
+
+	ldr r0,=finderrornull
+	bl printf
+	pop {pc}
+
+_fh1:	
+
+	
+	ldr r3,=debugflag
+	ldr r3,[r3]
+	cmp r3,#1
+	bne _nodebugfh6
+
+	push {r1,r2}
+	ldr r0,=searchingformsg
+	bl printf
+	pop {r1,r2}
+	
+	
+_nodebugfh6:	
 	// drop the address to the word header on the stack on match, zero on no match
 
 	// start at the end of the list
@@ -332,37 +370,56 @@ findhelper:
 findloop:
 	// go through the words
 
-	//	debug
-	//push {r0,r1,r2}
-	//ldr r1,=debugflag
-	//ldr r1,[r1]
-	//cmp r1,#1
-	//bne _nodebugfh
 
-	//add r0,#OFFSET_NAME
-	//mov r1,r0
-	//ldr r0,=finddebugstring
-	//bl printf
-//_nodebugfh:	
-	//pop {r0,r1,r2}
+	//	debug
+	push {r0,r1,r2}
+//	push {r0,r1}
+//	ldr r1,=0x20000a7c
+//	cmp r0,r1
+//	bne _nodebug
+
+	// match, enable debug
+//	ldr r0,=1
+//	ldr r1,=debugflag
+//	str r0,[r1]
+//	b _flc
+//_nodebug:
+	// no match, disable debug
+//	ldr r0,=0
+//	ldr r1,=debugflag
+//	str r0,[r1]
+
+_flc:
+//	pop {r1,r0}
+	ldr r1,=debugflag
+	ldr r1,[r1]
+	cmp r1,#1
+	bne _nodebugfh
+
+	add r0,#OFFSET_NAME
+	mov r1,r0
+	ldr r0,=finddebugstring
+	bl printf
+_nodebugfh:	
+	pop {r0,r1,r2}
 
 	
 	push {r0}  // push FA
 	ldr r4,[r0,#OFFSET_LENGTH]
 
 	// debug - print the word lengths
-	//push {r0,r1,r2,r3,r4}
-	//ldr r3,=debugflag
-	//ldr r3,[r3]
-	//cmp r3,#1
-	//bne _nodebugfh2
+	push {r0,r1,r2,r3,r4}
+	ldr r3,=debugflag
+	ldr r3,[r3]
+	cmp r3,#1
+	bne _nodebugfh2
 
-	//mov r2,r4
-	//ldr r0,=findlendebugstring
-	//bl printf
+	mov r2,r4
+	ldr r0,=findlendebugstring
+	bl printf
 	
-//_nodebugfh2:	
-	//pop {r0,r1,r2,r3,r4}
+_nodebugfh2:	
+	pop {r0,r1,r2,r3,r4}
 	
 	// match the length	
 	cmp r4,r1  // then compare to the word we have on the stack
@@ -385,6 +442,20 @@ _roggens4:
 	// compare strings
 	cmp r7,r0
 	beq _rg1
+	
+	push {r0,r1,r2,r3}
+	ldr r3,=debugflag
+	ldr r3,[r3]
+	cmp r3,#1
+	bne _nodebugfh5
+	mov r1,r7
+	mov r2,r0
+	ldr r0,=charvscharmsg
+	bl printf
+_nodebugfh5:	
+	pop {r0,r1,r2,r3}
+	
+	
 	add r5,#1
 _rg1:	
 
@@ -403,7 +474,20 @@ _roggens3:
 
 	// cleanup and return
 	pop {r0}  // push pointer to match to the value stack
+	
 	KPUSH
+
+	ldr r1,=debugflag
+	ldr r1,[r1]
+	cmp r1,#1
+	bne _nodebugfh3
+
+	mov r1,r0
+	add r1,#OFFSET_NAME
+	ldr r0,=findnothingfoundmsg
+	bl printf
+	
+_nodebugfh3:	
 	pop {pc}
 
 	// this is not a match, continue
@@ -415,6 +499,17 @@ _roggens2:
 	bne findloop
 	ldr r0,=0
 	KPUSH		   // nothing found, push 0
+
+	ldr r1,=debugflag
+	ldr r1,[r1]
+	cmp r1,#1
+	bne _nodebugfh4
+
+	ldr r0,=findnothingfoundmsg
+	bl printf
+	
+_nodebugfh4:	
+	
 	pop {pc}
 
 	
@@ -581,7 +676,7 @@ _kpush:
         ldr r1, =stackptr               // get the pointer to the bottom of the stack
         ldr r2,[r1]
         str r0,[r2]                     // store the value on the stack
-        sub r2,#endstack-stacktop       // update the stack pointer
+        sub r2,#INTLEN      // update the stack pointer
         str r2,[r1]
         pop {r1,r2,pc}
 
@@ -590,7 +685,7 @@ _kpop:
 	push {r1,lr}
 	ldr r1,=stackptr
 	ldr r0,[r1]
-	add r0,#endstack-stacktop
+	add r0,#INTLEN
 	str r0,[r1]
 	ldr r0,[r1]
 	ldr r0,[r0]
@@ -708,10 +803,11 @@ stackbottom:
 	.endr
 stacktop:
 	.int 0
-cpustacktop:
-	.int 0
 endstack:
 	.align 4
+cpustacktop:
+	.int 0
+
 wordptr:
 	.word 0
 
@@ -720,6 +816,11 @@ wordbuf:
 	.byte 0
 	.endr
 
+wordbuf2:
+	.rept 32
+	.byte 0
+	.endr
+	
 inputptr:	
 	.word forthdefs
 inputlen:

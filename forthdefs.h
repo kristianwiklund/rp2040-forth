@@ -18,6 +18,7 @@
 
 // stack manipulation
 .ascii ": OVER SWAP DUP ROT SWAP ; "
+.ascii ": DEPTH SP0 SP@ - 4 / ; "
 
 // conditionals and compilation
 .ascii ": BEGIN HERE ; IMMEDIATE "

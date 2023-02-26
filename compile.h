@@ -431,10 +431,13 @@ _disasmend:
 	str r1,[r0]
 	DONE
 
-	HEADER "SKIPSTRING",10,0,SKIPSTRING
+	// not for general use, set to invisible
+	HEADER "SKIPSTRING",10,FLAG_INVISIBLE,SKIPSTRING
 	ldr r0, =wordptr  	// grab the next thing in the function list
 	ldr r1,[r0]
 	ldr r1,[r1]		// and move the pointer to it
 	str r1,[r0]
 	DONE
+
+	
 	

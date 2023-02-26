@@ -167,15 +167,34 @@ _ofsl:
 
 	
 
-	// rewrite this to read from the input instead of from a tokenized row
-	
+	// there is a bug in this word - for example, if one do
+	// WORD CR FIND, it returns "WORD"
 	HEADER "WORD",4,0,WORD
 	// read from input buffer until space, enter, or zero is found.
 	bl newwordhelper
+	// the bug is because
+	// subsequent use of other words will overwrite this buffer
+	// hence, we need to copy it to another buffer - wordbuf2
+	
+	KPOP
+	push {r0} // save word length for later
+	KPOP
+	ldr r1,=wordbuf2
+	ldr r2,=0
+_wcopyloop:
+	ldrb r3,[r0,r2]
+	strb r3,[r1,r2]
+	add r2,#1
+	cmp r3,#0
+	bne _wcopyloop
+	
+	mov r0,r1
+	KPUSH
+	pop {r0}
+	KPUSH
 	DONE
 
 newwordhelper:
-
 	push {lr}
 	
 	// start by discarding everything that is a newline, carriage return, space

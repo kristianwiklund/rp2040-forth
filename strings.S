@@ -4,10 +4,12 @@
 	.global debugwordmsg, hexnumber, hexdebug, finddebugstring, findlendebugstring
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
-	
+	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
 	###
 	##	strings
 
+// call trace strings
+	
 callstackfullstring:
 	.asciz "(info) Forth call stack overflow.\n"
 
@@ -20,6 +22,8 @@ stacktracenullstring:
 	.asciz " 0x%x: (NULL)\n"
 callstackmsg:		
 	.asciz " 0x%x: (0x%x) %s\n"
+
+// decompiler strings
 	
 asmmsg:
 	.asciz "0x%x: <asm>\n"
@@ -35,7 +39,14 @@ immediatedecompilemsg:
 codemsg:
 	.asciz "0x%x: %s\n"
 
+// debugging strings	
+
 	
+
+searchingformsg:
+	.ascii "find: searching for length %d word <%s>\n"
+charvscharmsg:
+	.ascii "<%c> vs <%c>\n"
 debugwordmsg:
 	.asciz "Token: %s\n"
 
@@ -66,7 +77,15 @@ codedebugstring:
 	.asciz "->%x\n"
 forthwordstring:
 	.asciz "forth word starting at %x\n"
+findfoundmsg:
+	.asciz "found %s\n"
+findnothingfoundmsg:	
+	.asciz "nothing found\n"
 
+	// error messages
+
+finderrornull:
+	.asciz "Find: NULL pointer argument. Terminating\n"
 
 errormsg:
 	.asciz "HardFault - restarted"
