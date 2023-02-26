@@ -41,8 +41,8 @@
 .ascii " ELSE S\" LIT TYPE , "   // and this is the compiling behavior
 .ascii "THEN ; IMMEDIATE " // word end
 
-.ascii ": SMACK S\" ; IMMEDIATE "
-.ascii ": B SMACK 12345678\" ; "
+//.ascii ": SMACK S\" ; IMMEDIATE "
+//.ascii ": B SMACK 12345678\" TYPE ; "
 
 // test word - this must end the file
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"
