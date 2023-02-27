@@ -29,7 +29,8 @@ main:
 
 	
 	ldr r0,=0
-	push {r0} // end of input exec marker
+	CFPUSH r0
+//	push {r0} // end of input exec marker
 	
 	// present the interactive prompt
 	//bl terminalprompt
@@ -135,7 +136,9 @@ handleforthword:
 
 	ldr r0,=wordptr
 	ldr r2,[r0]
-	push {r2}        // push item we want to execute when we are done with this word, to the stack
+
+	CFPUSH r2
+	//push {r2}        // push item we want to execute when we are done with this word, to the stack
 	
 	str r1,[r0]      // store wordptr
 	mov r1,r2
@@ -150,7 +153,8 @@ handleforthword:
 	
 endoflist:
 	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt
-	pop {r0}
+	CFPOP r0
+	//pop {r0}
 	cmp r0,#0
 	beq reallydone
 _t3:	
@@ -170,7 +174,9 @@ bloop:
 	str r1,[r0]       // store wordptr
 
 	ldr r0,=0
-	push {r0} // end of input exec marker
+
+	CFPUSH r0
+	//push {r0} // end of input exec marker
 	// record it in the list
 //	mov r1,r0
 //	bl pushforthcall
@@ -217,6 +223,7 @@ get_code_offset:
 	ldr r0, =firstword // get the pointer to the first word in the list
 	ldr r0, [r0]       // (and fetch the value)
 wordsloop:
+
 	push {r0}          // push W1
 
 	// do not print hidden or invisible words
@@ -716,58 +723,6 @@ resetme:
 	
 	pop {pc}
 
-	// two subroutines to store where we are in the execution
-	// (call trace)
-	// note that this stack grows upwards. Makes debugging easier
-	// r1 contains the pointer to the word we want to store
-pushforthcall:
-	push {r5,r6,r7,lr}
-	ldr r7,=forthframestackptr
-	ldr r6,[r7]			// stack pointer
-	ldr r5,=forthframestackend
-	cmp r6,r5
-	ble _pfc1
-
-	// stack is overflowing, print info message
-	push {r0,r1,r2,r3}
-	ldr r0,=callstackfullstring
-	bl printf
-	pop {r0,r1,r2,r3}
-	pop {r5,r6,r7,pc}	
-
-_pfc1:	
-	str r1,[r6]
-	add r6,#4			// move pointer
-	str r6,[r7]
-	pop {r5,r6,r7,pc}	
-
-	// this doesn't return anything right now
-popforthcall:
-	push {r5,r6,r7,lr}
-	ldr r7,=forthframestackptr
-	ldr r6,[r7]			// stack pointer
-
-	ldr r5,=forthframestackstart
-	cmp r6,r5
-	bge _pfc2
-
-	// stack is underflowing, print info message
-	// message is noisy and not really needed _right now_, ignore and return
-	// however, this should really not happen...
-	//	push {r0,r1,r2,r3}
-	//	ldr r0,=callstackemptystring
-	//	bl printf
-	//	pop {r0,r1,r2,r3}
-	pop {r5,r6,r7,pc}	
-
-	
-_pfc2:	
-	sub r6,#4
-	str r6,[r7]			// simple discard
-	pop {r5,r6,r7,pc}	
-		
-	###
-	## variables
 
 forthdefs:
 	#include "forthdefs.h"

@@ -1,3 +1,57 @@
+	// two subroutines to store where we are in the execution
+	// (call trace)
+	// note that this stack grows upwards. Makes debugging easier
+	// r1 contains the pointer to the word we want to store
+pushforthcall:
+	push {r5,r6,r7,lr}
+	ldr r7,=forthframestackptr
+	ldr r6,[r7]			// stack pointer
+	ldr r5,=forthframestackend
+	cmp r6,r5
+	ble _pfc1
+
+	// stack is overflowing, print info message
+	push {r0,r1,r2,r3}
+	ldr r0,=callstackfullstring
+	bl printf
+	pop {r0,r1,r2,r3}
+	pop {r5,r6,r7,pc}	
+
+_pfc1:	
+	str r1,[r6]
+	add r6,#4			// move pointer
+	str r6,[r7]
+	pop {r5,r6,r7,pc}	
+
+	// this doesn't return anything right now
+popforthcall:
+	push {r5,r6,r7,lr}
+	ldr r7,=forthframestackptr
+	ldr r6,[r7]			// stack pointer
+
+	ldr r5,=forthframestackstart
+	cmp r6,r5
+	bge _pfc2
+
+	// stack is underflowing, print info message
+	// message is noisy and not really needed _right now_, ignore and return
+	// however, this should really not happen...
+	//	push {r0,r1,r2,r3}
+	//	ldr r0,=callstackemptystring
+	//	bl printf
+	//	pop {r0,r1,r2,r3}
+	pop {r5,r6,r7,pc}	
+
+	
+_pfc2:	
+	sub r6,#4
+	str r6,[r7]			// simple discard
+	pop {r5,r6,r7,pc}	
+		
+	###
+	## variables
+
+
 //	push {r1} // push B
 //	ldr r0,=hexnumber
 //	bl printf

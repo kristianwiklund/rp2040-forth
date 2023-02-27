@@ -4,6 +4,30 @@
 
 // utility macros to move things on and off the value stack
 // both operate on r0
+
+	.macro CFPUSH reg
+	// forthframestackptr contains the stack ptr
+	push {r6,r7}
+	ldr r7,=forthframestackptr
+	ldr r6,[r7]
+	str \reg,[r6]
+	add r6,#4
+	str r6,[r7]
+	pop {r6,r7}
+	//push {\reg}
+	.endm
+
+	.macro CFPOP reg
+	push {r6,r7}
+	ldr r7,=forthframestackptr
+	ldr r6,[r7]	
+	sub r6,#4
+	ldr \reg,[r6]
+	str r6,[r7]
+	pop {r6,r7}
+	//pop {\reg}
+	.endm
+	
 	.macro KPOP
 	bl _kpop
 	.endm
@@ -13,7 +37,6 @@
 	.endm
 
 	.macro DONE
-	bl popforthcall
 	ldr r0,=done
 	mov pc,r0
 	.ltorg  // allow a literal pool here
