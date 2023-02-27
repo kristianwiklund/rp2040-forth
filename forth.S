@@ -629,6 +629,8 @@ wordcompile:
 	// print a stacktrace of the calls from where we are to the first 0
 	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE // disabled
 	// start with the stack pointer, read each item, move up until we have a zero
+
+	// print basic information about the call stack
 	ldr r0, =stacktracestring
 	ldr r1,=forthframestackstart
 	ldr r2,=forthframestackptr
@@ -636,12 +638,13 @@ wordcompile:
 	bl printf
 	
 	ldr r7,=forthframestackstart
-//	ldr r7,[r7]
+
 _stl1:
-	ldr r1,[r7] // pointer to somewhere in a list
+	ldr r1,[r7] // pointer to somewhere in a list. this is the _next_ word we intend to execute.
 	cmp r1,#0
 	bne _stl2
-	
+
+	// if we are here, we are at the "end marker" (which is NULL)
 	push {r7}
 	ldr r0,=stacktracenullstring
 	mov r1,r7
@@ -650,7 +653,7 @@ _stl1:
 	b _strl3
 _stl2:
 
-	ldr r1,[r1] // actual pointer to a word
+	ldr r1,[r1] // actual pointer to a word - to the _next_ word we intend to execute.
 	mov r3,r1
 	add r3,#OFFSET_NAME
 	mov r2,r1
