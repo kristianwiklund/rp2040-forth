@@ -17,9 +17,11 @@
 .ascii ": 0>= 0 >= ; "
 
 // stack manipulation
+.ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
 .ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": DEPTH SP0 SP@ - 4 / ; "
 
+  
 // conditionals and compilation
 .ascii ": BEGIN HERE ; IMMEDIATE "
 
@@ -46,9 +48,5 @@
 
 // test word - this must end the file
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"
-
-
-
-
 
 
