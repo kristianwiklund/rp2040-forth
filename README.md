@@ -81,4 +81,7 @@ It also hangs when using USB for serial. No idea why. I use an UART adapter when
 | DEPTH                                          | Constant: The depth of the stack before DEPTH is run                                                                                                                                                                                                                                       |                                          |
 |                                                |                                                                                                                                                                                                                                        |                                          |
 
+## TODO
+
+* Separate the control flow stack from the rp2040 processor stack in order to make control flow manipulations possible directly from FORTH
 
