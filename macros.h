@@ -6,7 +6,6 @@
 // both operate on r0
 
 	.macro CFPUSH reg
-	// forthframestackptr contains the stack ptr
 	push {r6,r7}
 	ldr r7,=forthframestackptr
 	ldr r6,[r7]
@@ -14,7 +13,6 @@
 	add r6,#4
 	str r6,[r7]
 	pop {r6,r7}
-	//push {\reg}
 	.endm
 
 	.macro CFPOP reg
@@ -25,8 +23,8 @@
 	ldr \reg,[r6]
 	str r6,[r7]
 	pop {r6,r7}
-	//pop {\reg}
 	.endm
+
 	
 	.macro KPOP
 	bl _kpop
@@ -93,6 +91,16 @@ code_\label:
 end_\label:
 	.endm
 
+	// reads from address "assemblerlabel", and puts the data on the stack
+	.macro CONSTANT word, wordlen, label, assemblerlabel
+	HEADER "\word",\wordlen,0,\label
+	ldr r0,=\assemblerlabel
+	ldr r0,[r0]
+	KPUSH
+	DONE
+	.endm
+	
+	
 //goff:	
 //	blx main
 	

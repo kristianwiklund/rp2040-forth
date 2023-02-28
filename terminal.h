@@ -8,6 +8,10 @@
 
 	# input handling
 
+	CONSTANT "SOURCE-ID",9,SOURCEID,sourceid
+	
+	
+	
 	HEADER "S\"",2,0,SQUOTE
 	ldr r0,=SKIPSTRING
 	KPUSH
@@ -290,6 +294,8 @@ _mgc2:
 	str r2,[r1]		// of the buffer. This will force a terminal read on the next call.
 	ldr r1,=0
 	str r1,[r2]		// and set the buffer to zero to avoid double processing
+	ldr r2,=sourceid
+	str r1,[r2]		// and set sourceid to 0 indicating that we run from the input buffer
 	pop {r1,r2,r3,r4,pc}	// Then return the zero to the caller
 	
 _mgc1:
@@ -297,7 +303,6 @@ _mgc1:
 	str r2,[r1]		
 	
 	pop {r1,r2,r3,r4,pc}	// and return to the caller
-	
 
 
 	

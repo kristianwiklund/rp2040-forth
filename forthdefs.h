@@ -22,8 +22,21 @@
 .ascii ": DEPTH SP0 SP@ - 4 / ; "
 
   
-// conditionals and compilation
+// conditionals
 .ascii ": BEGIN HERE ; IMMEDIATE "
+.ascii ": UNTIL LIT ' 0BRANCH , , ; IMMEDIATE "
+.ascii ": IF LIT ' 0BRANCH , HERE 0 , ; IMMEDIATE "
+.ascii ": THEN HERE SWAP ! ; IMMEDIATE "
+.ascii ": ELSE LIT ' BRANCH , HERE 0 , SWAP HERE SWAP ! ; IMMEDIATE "
+
+.ascii ": B IF 1000 . ELSE 2000 . THEN ; "
+
+// compilation
+.ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
+
+
+
+
 
 // "Variable" creates a placeholder to a memory location that we can read and write
 // create a named, normal word. add functionality to return the address to the storage

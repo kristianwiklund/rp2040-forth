@@ -214,11 +214,12 @@ commahelper:
 
 	# ------ memory manipulation ---------
 
-	HEADER "HERE",4,0,HERE
-	ldr r0,=freemem
-	ldr r0,[r0]
-	KPUSH
-	DONE
+	CONSTANT "HERE",4,HERE,freemem
+//	HEADER "HERE",4,0,HERE
+//	ldr r0,=freemem
+//	ldr r0,[r0]
+//	KPUSH
+//	DONE
 
 	HEADER "@",1,0,FETCH
 	KPOP
@@ -268,39 +269,6 @@ _zb1:
 	ldr r2,[r1] // the next word
 	str r2,[r0]
 	DONE
-
-	// can be replaced by a forth definition if "tick" is implemented
-	FHEADER "UNTIL",5,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,UNTIL
-	// the stack contains where to jump if the condition is false
-	// start by compiling 0BRANCH to the HERE
-	.int LIT,ZBRANCH,COMMA
-	// then compile the word on the stack to HERE
-	.int COMMA
-	.int END
-
-	// can be replaced by a forth definition if "tick" is implemented
-	FHEADER "IF",2,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,IF
-	.int LIT,ZBRANCH,COMMA // compile a zbranch
-	.int HERE              // drop "HERE" on the stack
-	.int LIT,0,COMMA       // compile a placeholder for the jump we do if we are not doing the IF code
-	.int END
-
-	FHEADER "ELSE",4,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,ELSE
-	// compile a placeholder jump to the stack, to finalize the ongoing branch
-	// then back-compile the new address to the previous placeholder
-	.int LIT,BRANCH,COMMA // A branch that we always take
-	.int HERE
-	.int LIT,0,COMMA // new placeholder to fill for the THEN
-	.int SWAP               // get the old address (put "IF NOT JUMP" on top)
-	.int HERE,SWAP, STORE         // and make it jump here
-	.int END
-
-	FHEADER "THEN",4,FLAG_IMMEDIATE|FLAG_ONLYCOMPILE,THEN
-	.int HERE, SWAP       // drop the address where we are to the stack
-	.int STORE	      // and put it in the placeholder we compiled earlier
-	.int LIT,NOP,COMMA    // something to land at
-	.int END
-
 
 	// locate a word and decompile it
 	HEADER "SEE",3,FLAG_IMMEDIATE,SEE // cannot be compiled

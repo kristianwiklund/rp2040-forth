@@ -310,6 +310,22 @@ skipprint:
 	CFPUSH r0
 	DONE
 
+	HEADER "RP@",3,0,RPFETCH
+	ldr r0,=forthframestackptr
+	ldr r0,[r0]
+	KPUSH
+	DONE
+
+	HEADER "RP!",3,0,RPSTORE
+	KPOP
+	ldr r1,=forthframestackptr
+	str r0,[r1]
+	DONE
+
+	HEADER "RP0",3,0,RP0
+	ldr r0,=forthframestackstart
+	KPUSH
+	DONE
 	
 	
 	# --- restart
@@ -533,6 +549,12 @@ wordcompile:
 
 	b interpreter
 
+//	HEADER "EVALUATE",8,0,EVALUATE
+//	ldr r0,=inputptr
+//	ldr r1,[r0]
+//	KPOP
+//	str r0,[r1]
+//	DONE
 	
 	// print a stacktrace of the calls from where we are to the first 0
 	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE // disabled
@@ -642,7 +664,9 @@ forthdefs:
 	.data
 
 	.align 4
-	
+		
+sourceid:
+	.word -1  // we start executing the core words
 base:	
 	.word 10
 dbw:
