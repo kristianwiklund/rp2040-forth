@@ -261,27 +261,9 @@ skipprint:
 
 	# ------- stack manipulation -------
 	
-	HEADER "DUP",3,0,DUP
-	KPOP
-	KPUSH
-	KPUSH
-	DONE
-
-	HEADER "SWAP",4,0,SWAP
-	KPOP
-	mov r1,r0
-	KPOP
-	mov r2,r0
-	mov r0,r1
-	KPUSH
-	mov r0,r2
-	KPUSH
-	DONE
-
 	HEADER "DROP",4,0,DROP
 	KPOP
 	DONE
-
 
 	// constants to get the state of the stack
 	// fetch the current stack pointer

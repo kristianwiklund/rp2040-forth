@@ -20,7 +20,8 @@
 .ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
 .ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": DEPTH SP0 SP@ - 4 / ; "
-
+.ascii ": DUP SP@ 4 + @ ; "
+.ascii ": SWAP >R HERE ! R> HERE @ ; "
   
 // conditionals
 .ascii ": BEGIN HERE ; IMMEDIATE "

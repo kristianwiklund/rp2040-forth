@@ -28,7 +28,7 @@ _lambo3:
 _lambo:	
 	// then set the first word to this word
 	str r5,[r4]
-
+	
 	// bump the pointer and store 0 (the flags)
 	ldr r3,=0
 	add r5,#INTLEN
@@ -103,6 +103,7 @@ _created:
 	# toggles the HIDDEN word flag
 	HEADER "HIDDEN",6,0,HIDDEN
 	KPOP
+	
 	ldr r1,[r0,#OFFSET_FLAGS]
 	ldr r2,=FLAG_HIDDEN
 _o1:	
@@ -167,11 +168,8 @@ commahelper:
 	ldr r0,=freemem
 	str r1,[r0]
 	pop {pc}
-	
-	HEADER "LATEST",6,0,LATEST
-	ldr r0,=firstword
-	KPUSH
-	DONE
+
+	VARIABLE "LATEST",6,LATEST,firstword
 
 	// same as comma, but for characters. causes "freemem" to become unaligned
 	HEADER "c,",2,0,CCOMMA

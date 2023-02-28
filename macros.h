@@ -99,7 +99,13 @@ end_\label:
 	KPUSH
 	DONE
 	.endm
-	
+
+	.macro VARIABLE word, wordlen, label, assemblerlabel
+	HEADER "\word",\wordlen,0,\label
+	ldr r0,=\assemblerlabel
+	KPUSH
+	DONE
+	.endm
 	
 //goff:	
 //	blx main
