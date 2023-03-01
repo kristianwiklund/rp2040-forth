@@ -17,12 +17,12 @@
 .ascii ": 0>= 0 >= ; "
 
 // stack manipulation
+.ascii ": DUP SP@ 4 + @ ; "
 .ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
 .ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": DEPTH SP0 SP@ - 4 / ; "
-.ascii ": DUP SP@ 4 + @ ; "
 .ascii ": SWAP >R HERE ! R> HERE @ ; "
-  
+.ascii ": 2DUP OVER OVER ; "
 // conditionals
 .ascii ": BEGIN HERE ; IMMEDIATE "
 .ascii ": UNTIL LIT ' 0BRANCH , , ; IMMEDIATE "
@@ -36,9 +36,6 @@
 .ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
 
 
-
-
-
 // "Variable" creates a placeholder to a memory location that we can read and write
 // create a named, normal word. add functionality to return the address to the storage
 // reserve storage space behind the final marker (which is a zero) 
@@ -48,17 +45,22 @@
 // reserving memory, we compile the constant from the top of the heap, into the word itself
 .ascii ": CONSTANT WORD CREATE LIT ' LIT , , 0 , ; IMMEDIATE "
 
-// output
+// output and input
+
 .ascii ": CR 10 EMIT ; "
 .ascii ": SPACE 32 EMIT ; "
+.ascii ": CHAR WORD DROP C@ ; "
+.ascii ": [CHAR] LIT ' LIT , CHAR , ; IMMEDIATE "
+
 
 // ." have two different behaviors. If in exec mode, it prints the string, if in compile mode, it compiles code to print the string
 .ascii ": .\" STATE 0= IF BEGIN KEY DUP DUP 34 <> IF EMIT ELSE DROP THEN 34 = UNTIL " // this is the interpreting behavior
 .ascii " ELSE S\" LIT TYPE , "   // and this is the compiling behavior
 .ascii "THEN ; IMMEDIATE " // word end
 
-//.ascii ": SMACK S\" ; IMMEDIATE "
-//.ascii ": B SMACK 12345678\" TYPE ; "
+
+.ascii ": ( BEGIN KEY [CHAR] ) = UNTIL; IMMEDIATE "
+
 
 // test word - this must end the file
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"

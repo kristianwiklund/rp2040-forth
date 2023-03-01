@@ -232,6 +232,19 @@ commahelper:
 	str r0,[r1]
 	DONE
 
+	HEADER "C@",2,0,CFETCH
+	KPOP
+	ldrb r0,[r0]
+	KPUSH
+	DONE
+
+	HEADER "C!",2,0,CSTORE
+	KPOP
+	mov r1,r0
+	KPOP
+	strb r0,[r1]
+	DONE
+
 	#
 
 	// ##########################
