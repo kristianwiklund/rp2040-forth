@@ -13,6 +13,9 @@
 
 
 main:
+//	ldr r0,=__vectors
+//	ldr r1,=main
+//	str r1,[r0,#0x0c]
 	// reset things
 
 	bl resetme
@@ -268,7 +271,7 @@ skipprint:
 	// constants to get the state of the stack
 	// fetch the current stack pointer
 	HEADER "SP@",3,0,SPFETCH
-	ldr r0,=stackptr
+	ldr r0,=vstackptr
 	ldr r0,[r0]
 	KPUSH
 	DONE
@@ -595,7 +598,7 @@ boot:
 
 _kpush:	
         push {r1,r2,lr}
-        ldr r1, =stackptr               // get the pointer to the bottom of the stack
+        ldr r1, =vstackptr               // get the pointer to the bottom of the stack
         ldr r2,[r1]
         str r0,[r2]                     // store the value on the stack
         sub r2,#INTLEN      // update the stack pointer
@@ -605,7 +608,7 @@ _kpush:
 
 _kpop:	
 	push {r1,lr}
-	ldr r1,=stackptr
+	ldr r1,=vstackptr
 	ldr r0,[r1]
 	add r0,#INTLEN
 	str r0,[r1]
@@ -639,10 +642,6 @@ resetme:
 	pop {pc}
 
 
-forthdefs:
-	#include "forthdefs.h"
-	.align 4
-
 	.data
 
 	.align 4
@@ -666,7 +665,7 @@ firstword:
 	.word link
 
 	.align 4
-stackptr:
+vstackptr:
 	.word stacktop
 	
 stackbottom:
@@ -715,7 +714,10 @@ endbuffer:
 
 
 	// read a word from stdin
+forthdefs:
+	#include "forthdefs.h"
 	
+	.align 4	
 
 heap:
 	.rept 2000

@@ -58,9 +58,8 @@
 .ascii " ELSE S\" LIT TYPE , "   // and this is the compiling behavior
 .ascii "THEN ; IMMEDIATE " // word end
 
-
-.ascii ": ( BEGIN KEY [CHAR] ) = UNTIL; IMMEDIATE "
-
+// comments
+.ascii ": ( BEGIN KEY [CHAR] ) = UNTIL ; IMMEDIATE "
 
 // test word - this must end the file
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"

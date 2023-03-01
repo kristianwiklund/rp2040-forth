@@ -12,4 +12,4 @@ forth.S terminal.h macros.h output.h strings.S compile.h forthdefs.h mathwords.h
 pico_enable_stdio_uart(forth 1)
 pico_enable_stdio_usb(forth 0)
 pico_add_extra_outputs(forth)
-target_link_libraries(forth pico_stdlib pico_bootsel_via_double_reset pico_debug)
+target_link_libraries(forth pico_stdlib pico_bootsel_via_double_reset)
