@@ -118,24 +118,44 @@ _rlh1:
 
 loopzor:
 	push {r1}
-	
 	bl getchar
-	bl putchar // echo
-
+	bl putchar
 	pop {r1}
 
 	cmp r0,#'\n'
 	beq endloopzor
 	cmp r0,#'\r'
 	beq endloopzor
+
+	# backspace
+	cmp r0,#8
+	bne _notbackspace
+
+	ldr r0,=buffer
+	cmp r1,r0
+	beq _bs1
 	
+	sub r1,#1
+_bs1:	
+	ldr r0,=0	
+	strb r0,[r1]
+
+	push {r1}
+	ldr r0,=32
+	bl putchar
+	ldr r0,=8
+	bl putchar
+	pop {r1}
+	b loopzor
+	
+_notbackspace:	
 	strb r0,[r1]
 	add r1,#1
 	
 	b loopzor
 
 endloopzor:
-	// dump junk
+	// dump junk received after the newline
 _fsl:
 	push {r1}
 	bl getchar_timeout_us
