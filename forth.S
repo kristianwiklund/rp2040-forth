@@ -191,7 +191,12 @@ bloop:
 //isr_hardfault:	
 //	ldr r0, =errormsg
 //	bl printf
-//	b main
+//	bl resetme
+//	ldr r0,=0xFFFFFFF9UL
+//	mrs r0,ipsr
+//	mov r0,lr
+	
+	
 
 	
 	// helper to get the offset to the code from a pointer to a word
@@ -313,13 +318,14 @@ skipprint:
 	KPUSH
 	DONE
 	
-	
-	# --- restart
-
-	HEADER "RESET",5,0,RESET
-	bl resetme
+	HEADER "CRASH",5,0,CRASH
 	ldr r0,=main
-	mov pc,r0
+	add r0,#1
+	str r1,[r0]
+	DONE
+//	bl resetme
+//	ldr r0,=main
+//	mov pc,r0
 	
 	# --------------------
 	# --- FIND ------------
