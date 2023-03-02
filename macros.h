@@ -10,7 +10,8 @@
 	ldr r7,=forthframestackptr
 	ldr r6,[r7]
 	str \reg,[r6]
-	add r6,#4
+	
+	sub r6,#4
 	str r6,[r7]
 	pop {r6,r7}
 	.endm
@@ -19,7 +20,8 @@
 	push {r6,r7}
 	ldr r7,=forthframestackptr
 	ldr r6,[r7]	
-	sub r6,#4
+	add r6,#4
+	
 	ldr \reg,[r6]
 	str r6,[r7]
 	pop {r6,r7}

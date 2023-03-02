@@ -5,6 +5,7 @@
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
+	.global compilingstr
 	###
 	##	strings
 
@@ -41,12 +42,13 @@ codemsg:
 
 // debugging strings	
 
-	
+compilingstr:
+	.asciz "(c): "
 
 searchingformsg:
-	.ascii "find: searching for length %d word <%s>\n"
+	.asciz "find: searching for length %d word <%s>\n"
 charvscharmsg:
-	.ascii "<%c> vs <%c>\n"
+	.asciz "<%c> vs <%c>\n"
 debugwordmsg:
 	.asciz "Token: %s\n"
 

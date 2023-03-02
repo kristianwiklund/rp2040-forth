@@ -97,6 +97,14 @@ readlinehelper:
 
 	push {lr}
 
+	ldr r0,=mode
+	ldr r0,[r0]
+	cmp r0,#0
+	beq _rlh_nc
+	
+	ldr r0,=compilingstr
+	bl printf
+_rlh_nc:	
 	ldr r0,=inputlen
 	ldr r0,[r0]
 	cmp r0, #0

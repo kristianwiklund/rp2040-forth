@@ -186,10 +186,12 @@ bloop:
 
 	b execute
 
-isr_hardfault:	
-	ldr r0, =errormsg
-	bl printf
-	b main
+//	.global isr_hardfault
+	
+//isr_hardfault:	
+//	ldr r0, =errormsg
+//	bl printf
+//	b main
 
 	
 	// helper to get the offset to the code from a pointer to a word
@@ -212,8 +214,7 @@ get_code_offset:
 	ldr r3,=16
 	mul r1,r3
 	pop {r3,pc}
-	
-	
+
 //// ############## WORD DEFINITIONS ############################ ///	
 
 	// split to other files, but have to be included due to macro magic
@@ -636,7 +637,7 @@ resetme:
 	str r1,[r0]
 
 	ldr r0,=forthframestackptr
-	ldr r1,=forthframestackstart
+	ldr r1,=forthframestackend
 	str r1,[r0]
 	
 	pop {pc}
@@ -703,7 +704,7 @@ forthframestackstart:
 forthframestackend:
 	.word 0
 forthframestackptr:
-       .word forthframestackstart
+       .word forthframestackend
 	      
 buffer:
 	.rept 200
@@ -719,6 +720,8 @@ forthdefs:
 	
 	.align 4	
 
+heapguard:
+	.int 0x13371337
 heap:
 	.rept 2000
 	.int 0xaddaadba

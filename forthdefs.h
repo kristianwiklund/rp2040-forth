@@ -2,6 +2,23 @@
 // final word must end with 0 (hence asciz)
 // intermediate must have a space at the end to get the parser working
 
+
+// stack manipulation
+//.ascii ": OFF ; "
+.ascii ": DUP HERE ! HERE @ HERE @ ; "
+.ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
+.ascii ": OVER SWAP DUP ROT SWAP ; "
+.ascii ": DEPTH SP0 SP@ + 4 / ; "
+.ascii ": SWAP >R HERE ! R> HERE @ ; "
+.ascii ": 2DUP OVER OVER ; "
+// conditionals
+.ascii ": BEGIN HERE ; IMMEDIATE "
+.ascii ": UNTIL LIT ' 0BRANCH , , ; IMMEDIATE "
+.ascii ": IF LIT ' 0BRANCH , HERE 0 , ; IMMEDIATE "
+.ascii ": THEN HERE SWAP ! ; IMMEDIATE "
+
+.ascii ": ELSE LIT ' BRANCH , HERE 0 , SWAP HERE SWAP ! ; IMMEDIATE "
+
 // math
 .ascii ": / /MOD SWAP DROP ; "
 .ascii ": MOD /MOD DROP  ; "
@@ -16,21 +33,6 @@
 .ascii ": 0> 0 > ; "
 .ascii ": 0>= 0 >= ; "
 
-// stack manipulation
-.ascii ": DUP SP@ 4 + @ ; "
-.ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
-.ascii ": OVER SWAP DUP ROT SWAP ; "
-.ascii ": DEPTH SP0 SP@ - 4 / ; "
-.ascii ": SWAP >R HERE ! R> HERE @ ; "
-.ascii ": 2DUP OVER OVER ; "
-// conditionals
-.ascii ": BEGIN HERE ; IMMEDIATE "
-.ascii ": UNTIL LIT ' 0BRANCH , , ; IMMEDIATE "
-.ascii ": IF LIT ' 0BRANCH , HERE 0 , ; IMMEDIATE "
-.ascii ": THEN HERE SWAP ! ; IMMEDIATE "
-.ascii ": ELSE LIT ' BRANCH , HERE 0 , SWAP HERE SWAP ! ; IMMEDIATE "
-
-.ascii ": B IF 1000 . ELSE 2000 . THEN ; "
 
 // compilation
 .ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
@@ -52,7 +54,6 @@
 .ascii ": CHAR WORD DROP C@ ; "
 .ascii ": [CHAR] LIT ' LIT , CHAR , ; IMMEDIATE "
 
-
 // ." have two different behaviors. If in exec mode, it prints the string, if in compile mode, it compiles code to print the string
 .ascii ": .\" STATE 0= IF BEGIN KEY DUP DUP 34 <> IF EMIT ELSE DROP THEN 34 = UNTIL " // this is the interpreting behavior
 .ascii " ELSE S\" LIT TYPE , "   // and this is the compiling behavior
@@ -60,8 +61,11 @@
 
 // comments
 .ascii ": ( BEGIN KEY [CHAR] ) = UNTIL ; IMMEDIATE "
+//.ascii "1 DEBUG ! "
 
-// test word - this must end the file
-.asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ;"
+// test words - this must end the file
+.ascii ": B IF 1000 . ELSE 2000 . THEN ; "
+.asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; "
 
+endofforthdefs:
 

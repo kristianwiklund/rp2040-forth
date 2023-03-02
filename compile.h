@@ -133,11 +133,16 @@ _tickrun:
 	bl findhelper
 	DONE
 	
-	
+//	HEADER "OVER",4,0,OVER
+//	ldr r0,=vstackptr
+//	ldr r0,[r0]
+//	ldr r0,[r0,#8]
+//	KPUSH
+//	DONE
 	
 	
 	FHEADER ":",1,0,COLON
-	.int WORD
+	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
 	.int CREATE                 // creates a header for a forth word including the marker
 	.int LATEST, FETCH, HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
