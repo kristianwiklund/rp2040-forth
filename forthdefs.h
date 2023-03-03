@@ -7,9 +7,8 @@
 //.ascii ": OFF ; "
 .ascii ": DUP HERE ! HERE @ HERE @ ; "
 .ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
-.ascii ": OVER SWAP DUP ROT SWAP ; "
-.ascii ": DEPTH SP0 SP@ + 4 / ; "
 .ascii ": SWAP >R HERE ! R> HERE @ ; "
+.ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": 2DUP OVER OVER ; "
 // conditionals
 .ascii ": BEGIN HERE ; IMMEDIATE "
@@ -32,6 +31,9 @@
 .ascii ": 0<> 0 <> ; "
 .ascii ": 0> 0 > ; "
 .ascii ": 0>= 0 >= ; "
+
+// stack calculations that require /
+.ascii ": DEPTH SP0 SP@ + 4 / ; "
 
 
 // compilation

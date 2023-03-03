@@ -5,7 +5,7 @@
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
-	.global compilingstr
+	.global compilingstr,badatoistring
 	###
 	##	strings
 
@@ -84,8 +84,12 @@ findfoundmsg:
 findnothingfoundmsg:	
 	.asciz "nothing found\n"
 
+
 	// error messages
 
+badatoistring:
+	.asciz "ATOI failed because '%s' is NaN\n"
+	
 finderrornull:
 	.asciz "Find: NULL pointer argument. Terminating\n"
 

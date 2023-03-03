@@ -319,9 +319,11 @@ skipprint:
 	DONE
 	
 	HEADER "CRASH",5,0,CRASH
-	ldr r0,=main
-	add r0,#1
-	str r1,[r0]
+	//	ldr r0,=main
+	//	add r0,#1
+	//	str r1,[r0]
+	ldr r0,=0
+	mov pc,r0
 	DONE
 //	bl resetme
 //	ldr r0,=main
@@ -485,8 +487,20 @@ interpreter:
 	// try converting it to an integer
 
 	ldr r0,=wordbuf
-	bl atoi
+	ldr r1,=base
+	ldr r1,[r1]
+	bl myatoi
 
+	bvc _goodatoi
+
+	mov r1,r0
+	ldr r0,=badatoistring
+	bl printf
+	
+_goodatoi:	
+	
+	mov r0,r2
+	
 	// note that a failed lookup and a failed conversion will result in a zero (0) value
 
 	ldr r1,=mode
