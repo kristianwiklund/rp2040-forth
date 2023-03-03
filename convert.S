@@ -55,7 +55,7 @@ _notnegative:
 	// base 10 or less
 _bc1:
 	ldr r4,='9'
-	ldr r5,=96
+	ldr r5,=96 // character before 'a' in the ascii table
 	
 _convloop:	
 	ldrb r3,[r0]
@@ -107,7 +107,12 @@ _endconv:
 	pop {r0}
 
 	// add code to negate the number here, if negative
+	ldrb r3,[r0]
+	cmp r3,#'-'
+	bne _endendconv
+	neg r2,r2
 	
+_endendconv:	
 	pop {r3-r7,pc}	
 
 _myatoierrorpop:
