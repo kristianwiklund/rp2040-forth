@@ -1,6 +1,8 @@
 	.thumb_func
 	.global alignhelper, commahelper
-
+	.global mystrcpy
+	
+	#include "macros.h"
 
 	// find the next aligned word boundary
 	// In: r1 is an address we want to align
@@ -30,12 +32,14 @@ commahelper:
 
 	
 	// copy zero-terminated string r0 to address r1
-strcpy:
+mystrcpy:
 	push {r2-r4,lr}
 
 _scl:
-	ldr r2,[r0]
-	str r2,[r1]
+	ldrb r2,[r0]
+	strb r2,[r1]
+	add r0,#1
+	add r1,#1
 	cmp r2,#0
 	bne _scl
 	

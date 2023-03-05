@@ -41,19 +41,18 @@ _lambo:
 	add r5,#INTLEN
 	str r1,[r5]
 
-
-
 	// bump the pointer and store the name itself
 	add r5,#INTLEN
 
-_cl1:
-	ldrb r3,[r2,r1]
-	strb r3,[r5,r1]
-	sub r1,#1
-	cmp r1,#0
-	bne _cl1
-	ldrb r3,[r2,r1] // store last letter
-	strb r3,[r5,r1]
+	// when we are here, we have the original string in r2, and the place where we want to copy it in r5
+	// we need to move things around a bit, move r2 to r0, r5 to r1, then we call strcpy
+	push {r0,r1}
+	mov r0,r2
+	mov r1,r5
+	bl mystrcpy
+	pop {r0,r1}
+	
+	
 	pop {r1}
 _cl2:	
 	// bump the pointer to behind the word name
