@@ -687,7 +687,7 @@ freemem:
 mode:
 	.word 0
 debugflag:
-	.word 0
+	.word 1
 firstword:
 	.word link
 

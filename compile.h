@@ -49,7 +49,7 @@ _lambo:
 	str r3,[r5, #OFFSET_EXEC]
 
 	// header created, move the pointer to the start of the word name
-	add r5,#OFFSET_NAME
+	add r5,#FIXED_HEADER_LENGTH
 	
 	// when we are here, we have the original string in r2, and the place where we want to copy it in r5
 	// we need to move things around a bit, move r2 to r0, r5 to r1, then we call strcpy
@@ -96,9 +96,6 @@ cloop:
 	cmp r1,r5
 	bne cloop
 	
-	// update the header with the exec pointer
-	str r5,[r7,#OFFSET_EXEC]
-
 	// add a forth marker, increase the memory pointer
 	// and we are good to go	
 _created:
@@ -106,6 +103,8 @@ _created:
 	ldr r1,[r0]
 	ldr r2,=0xabadbeef
 	str r2,[r1]
+	// update the header with the exec pointer
+	str r1,[r7,#OFFSET_EXEC]
 	add r1,#INTLEN
 	str r1,[r0]
 	

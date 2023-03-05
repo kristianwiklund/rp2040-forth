@@ -81,7 +81,7 @@ code_\label:
 	
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
-	ldr r1,=\label
+//	ldr r1,=\label
 //	bl pushforthcall
 //	ldr r0,=debugflag
 //	ldr r0, [r0]
