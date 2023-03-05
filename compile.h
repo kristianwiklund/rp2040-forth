@@ -6,8 +6,11 @@
 
 	FHEADER "STATE",5,0,STATE
 	.word LIT,mode,FETCH,0
-	
-	# -- make a word placeholder
+
+	//
+	// -- make a word placeholder
+
+
 	
 	HEADER "CREATE",6,0,CREATE
 	KPOP	
@@ -62,8 +65,10 @@ _cl2:
 	add r5, #1    // to not overwrite with filler (which we use for debugging...)
 	
 	// now the tricky part, align HERE to instruction boundary
-
+	// r5 contains the address right behind the string
 	mov r1,r5
+	// move it to r1, and use the helper to adjust
+
 	
 	add r5,#15
 	lsr r5,#4
@@ -103,15 +108,32 @@ _created:
 	# toggles the HIDDEN word flag
 	HEADER "HIDDEN",6,0,HIDDEN
 	KPOP
-	
 	ldr r1,[r0,#OFFSET_FLAGS]
 	ldr r2,=FLAG_HIDDEN
-_o1:	
 	eor r1,r2
-_o2:	
 	str r1,[r0,#OFFSET_FLAGS]
-
 	DONE
+
+	# sets the HIDDEN word flag
+	HEADER "HIDE",4,FLAG_INVISIBLE,HIDE
+	KPOP
+	ldr r1,[r0,#OFFSET_FLAGS]
+	ldr r2,=FLAG_HIDDEN
+	orr r1,r2
+	str r1,[r0,#OFFSET_FLAGS]
+	DONE
+
+	# toggles the HIDDEN word flag
+	HEADER "UNHIDE",6,FLAG_INVISIBLE,UNHIDE
+	KPOP
+	ldr r2,=FLAG_HIDDEN
+	ldr r1,=255
+	eor r2,r1
+	ldr r1,[r0,#OFFSET_FLAGS]
+	and r1,r2
+	str r1,[r0,#OFFSET_FLAGS]
+	DONE
+	
 
 	HEADER "'",1,FLAG_IMMEDIATE,TICK
 	ldr r0,=mode
@@ -144,14 +166,14 @@ _tickrun:
 	FHEADER ":",1,0,COLON
 	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
 	.int CREATE                 // creates a header for a forth word including the marker
-	.int LATEST, FETCH, HIDDEN  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
+	.int LATEST, FETCH, HIDE  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
 	.int END
 
 	FHEADER ";",1,FLAG_IMMEDIATE,SEMICOLON
 	.int LIT,0,COMMA	// add end of word marker
 	.int LBRAC		// end compile mode
-	.int LATEST, FETCH, HIDDEN // remove hidden flag
+	.int LATEST, FETCH, UNHIDE // remove hidden flag
 	.int END
 	
 	# ---- COMMA
@@ -190,15 +212,22 @@ commahelper:
 	// align the free space pointer
 	HEADER "ALIGN",5,0,ALIGN
 	ldr r0,=freemem
-	ldr r5,[r0]
+	ldr r1,[r0]
 	
-	add r5,#3
-	lsr r5,#2
-	ldr r3,=4
-	mul r5,r3
+	bl alignhelper
+	str r1,[r0]
 
-	str r5,[r0]
 	DONE
+
+	// r1 is an address we want to align
+alignhelper:	
+	push {r3,lr}
+	
+	add r1,#3
+	lsr r1,#2
+	ldr r3,=4
+	mul r1,r3
+	pop {r3,pc}
 	
 
 	# --------------

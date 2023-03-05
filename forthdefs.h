@@ -1,3 +1,5 @@
+// https://github.com/carlk3/no-OS-FatFS-SD-SPI-RPi-Pico
+
 // ascii definitions of forth words that run on startup
 // final word must end with 0 (hence asciz)
 // intermediate must have a space at the end to get the parser working
@@ -31,18 +33,21 @@
 .ascii ": 0<> 0 <> ; "
 .ascii ": 0> 0 > ; "
 .ascii ": 0>= 0 >= ; "
+.ascii ": 1- 1 - ; "
 
-// stack calculations that require /
+// stack calculations that require / must come after /
 .ascii ": DEPTH SP0 SP@ + 4 / ; "
 
 
 // compilation
 .ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
+.ascii ": RECURSE UNHIDE ; IMMEDIATE "
 
 
 // "Variable" creates a placeholder to a memory location that we can read and write
 // create a named, normal word. add functionality to return the address to the storage
-// reserve storage space behind the final marker (which is a zero) 
+// reserve storage space behind the final marker (which is a zero)
+
 .ascii ": VARIABLE WORD CREATE LIT ' LIT , HERE 8 + , 0 , 0 , ; IMMEDIATE "
 
 // Similar mechanism for constant. Create a word, but instead of
@@ -66,6 +71,7 @@
 //.ascii "1 DEBUG ! "
 
 // test words - this must end the file
+.ascii ": FAC1 ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC1 * ELSE DROP 1 THEN ; "
 .ascii ": B IF 1000 . ELSE 2000 . THEN ; "
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; "
 
