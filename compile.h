@@ -41,6 +41,13 @@ _lambo:
 	add r5,#INTLEN
 	str r1,[r5]
 
+	// bump the pointer and store the pointer to executable code
+	// by default, this should drop something on the stack or something like
+	// that. We set the pointer to 0 as a start
+	add r5,#INTLEN
+	ldr r3,=0
+	str r3,[r5]
+	
 	// bump the pointer and store the name itself
 	add r5,#INTLEN
 

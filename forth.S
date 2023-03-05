@@ -90,7 +90,10 @@ runthecode:
 	add r3, #OFFSET_LENGTH
 	ldr r3, [r3]
 
-	bl get_code_offset
+	// we replace the calculation of the code offset by accessing the pointer in the word header.
+	// this should be a bit more robust + allows us to use the DOES> construct
+	//bl get_code_offset
+	ldr r1,[r1,#OFFSET_EXEC]
 	ldr r4,[r1]
 	pop {r1}
 _fd:	
@@ -105,7 +108,12 @@ _nodp1:
 	
 	// r1 contains the pointer to the start of the word,
 	// use the helper to get the start of the wordlist/code
-	bl get_code_offset
+
+	// we replace the calculation of the code offset by accessing the pointer in the word header.
+	// this should be a bit more robust + allows us to use the DOES> construct
+	//bl get_code_offset
+	ldr r1,[r1,#OFFSET_EXEC]
+	
 	// now we have the pointer to the code list in r1
 
 	// load the first word of whatever we are pointing at

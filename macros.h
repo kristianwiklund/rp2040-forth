@@ -62,18 +62,23 @@ flags_\label:
 	.int \flags
 length_\label:	
 	.int \wordlen
+exec_\label:
+	.int code_\label
 word_\label:
 	.asciz "\word"
 	.align 4
 code_\label:
 	.endm
 
-	#define INTLEN 	      4
-
-	#define	OFFSET_FLAGS  INTLEN
-	#define OFFSET_NAME   (INTLEN*3)
+	#define INTLEN 	              4
+	#define FIXED_HEADER_LENGTH   (INTLEN*4) // next + flags + length + exec
+	
+	
+	#define	OFFSET_FLAGS  (INTLEN  )
 	#define OFFSET_LENGTH (INTLEN*2)
-
+	#define OFFSET_NAME   (INTLEN*4)
+	#define OFFSET_EXEC   (INTLEN*3)
+	
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label
 	ldr r1,=\label
