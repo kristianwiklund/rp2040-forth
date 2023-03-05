@@ -1,14 +1,44 @@
-	// convert ascii to number
-	// handle any base
+// MIT License
+
+// Copyright (c) 2023 Kristian Wiklund
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+	
+	// convert ascii to number, or number to ascii
+	// handle any base 1-36 (1 will break horribly)
+	// itoa requires rp2040 hardware divider
+	
+#include "hardware/regs/addressmap.h"
+#include "hardware/regs/sio.h"	
+
+	
+	
 	// check that we are not b0rking with the wrong characters
 
-	.global myatoi
+	.global myatoi, myitoa
 	.thumb_func
 
 	// in: r0 - string pointer to null-terminated string
 	// in: r1 - radix
 	// out: r2 - value
-	// out: V flag true - error
+	// out: V flag set --> error
 
 myatoi:
 	push {r3-r7,lr}
@@ -117,6 +147,7 @@ _endendconv:
 
 _myatoierrorpop:
 	pop {r0}
+
 _myatoierror:
 	// set the overflow flag
 	mrs r2,apsr
@@ -126,6 +157,97 @@ _myatoierror:
 _x:	
 	pop {r3-r7,pc}
 
+	.ltorg
+	
+	// convert number to digits
+	// in: r0 - number to convert
+	// in: r1 - radix
+	// in: r2 - pointer to string storage
+myitoa:
+	push {r3-r5,lr}
+	mov r7,r2		// save for later
+	
+	// iterate over the number and get the number % radix and number / radix
+
+	ldr r5,=digits
+	push {r0}    // save for sign check
+
+	cmp r0,#0
+	bge _itoa_loop
+
+	neg r0,r0	// if negative, convert to positive before creating the string
+
+	
+_itoa_loop:
+	
+	bl divide // get remainder and quotient between the number and the radix
+
+	// r3 contains the remainder. 
+	ldrb r3,[r5, r3] // do a lookup in the digits table to get the character to store
+	strb r3,[r2]     // store it
+	add r2, #1       // and increment the pointer
+
+	// r4 contains the quotient
+	mov r0,r4
+	cmp r0, #0
+	bne _itoa_loop
+
+	pop {r0} 	// restore number
+	cmp r0,#0
+	bge _not_negative_itoa
+
+	ldr r4,='-'
+	strb r4,[r2]
+	add r2, #1
+	
+
+_not_negative_itoa:	
+
+	ldr r4,=0		// zero terminate
+	strb r4,[r2]
+
+	// here we need to reverse the string.
+	// r2-1 contains the last digit
+	// r7 contains the first digit
+
+	sub r2, #1
+
+_reverseloop:
+	ldrb r3,[r2]
+	ldrb r4,[r7]
+	strb r3,[r7]
+	strb r4,[r2]
+
+	sub r2,#1
+	add r7,#1
+
+	cmp r2,r7
+	bgt _reverseloop
+	
+	
+	
+	pop {r3-r5,pc}
+	
+
+divide:
+	push {r5,lr}
+	ldr r5,=SIO_BASE
+	str r0, [r5, #SIO_DIV_SDIVIDEND_OFFSET] // number we want to divide
+	str r1, [r5, #SIO_DIV_SDIVISOR_OFFSET]  // with this number
+
+	// delay 8 cycles
+
+	b 1f
+1: 	b 1f	
+1: 	b 1f
+1: 	b 1f
+1:
+	ldr r3, [r5, #SIO_DIV_REMAINDER_OFFSET]
+	ldr r4, [r5, #SIO_DIV_QUOTIENT_OFFSET]
+
+	pop {r5,pc}
+	
+	
 digits:
 
 	// because.

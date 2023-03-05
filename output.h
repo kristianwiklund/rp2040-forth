@@ -6,13 +6,22 @@
 
 	HEADER ".",1,0,DOT
 	KPOP
-	ldr r2,=base
-	ldr r2,[r2]
-	cmp r2,#16
-	beq _hex
-	mov r1,r0
-	ldr r0,=numberstring
+	ldr r1,=base
+	ldr r1,[r1]
+	ldr r2,=wordbuf2
+	bl myitoa
+
+//	ldr r2,=base
+//	ldr r2,[r2]
+//	cmp r2,#16
+//	beq _hex
+//	mov r1,r0
+	ldr r0,=wordbuf2
 	bl printf
+
+	ldr r0,=32
+	bl putchar
+	
 	DONE
 _hex:
 	mov r1,r0

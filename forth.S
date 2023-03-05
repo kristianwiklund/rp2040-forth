@@ -448,16 +448,23 @@ _roggens2:
 	// -- run a word pointed to by the topmost item on the stack
 	// only works for non-forth-words
 	HEADER "EXECUTE",7,0,EXECUTE
-	KPOP
-	cmp r0,#0
+	KPOP				// this contains an execution token
+	cmp r0,#0			// ...or zero. If zero, don't crash the machine.
 	beq _noexec
-	mov r1,r0
-	ldr r0,=runthecode
-	mov pc,r0
-//	bl get_code_offset
-//	mov pc,r1
+
+	// craft a very short list containing the exec token to this word and a zero
+
+	ldr r1,=execbuf
+	str r0,[r1]
+
+	CFPUSH r1
+	
+	// and let it fall through to DONE
+	
+
 _noexec:
 	DONE
+
 	
 	
 
@@ -687,7 +694,7 @@ freemem:
 mode:
 	.word 0
 debugflag:
-	.word 1
+	.word 0
 firstword:
 	.word link
 
@@ -718,6 +725,9 @@ wordbuf2:
 	.rept 32
 	.byte 0
 	.endr
+execbuf:
+	.word 0
+	.word 0
 	
 inputptr:	
 	.word forthdefs

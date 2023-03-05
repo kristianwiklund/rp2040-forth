@@ -61,6 +61,14 @@
 .ascii ": CHAR WORD DROP C@ ; "
 .ascii ": [CHAR] LIT ' LIT , CHAR , ; IMMEDIATE "
 
+// number handling
+.ascii ": HEX 16 BASE ! ; "
+.ascii ": DEC 10 BASE ! ; "
+
+// this will fail for literals atm (since execute doesn't handle it well)
+.ascii ": BASE-EXECUTE BASE @ >R BASE ! EXECUTE R> BASE ! ; "
+
+
 // ." have two different behaviors. If in exec mode, it prints the string, if in compile mode, it compiles code to print the string
 .ascii ": .\" STATE 0= IF BEGIN KEY DUP DUP 34 <> IF EMIT ELSE DROP THEN 34 = UNTIL " // this is the interpreting behavior
 .ascii " ELSE S\" LIT TYPE , "   // and this is the compiling behavior
