@@ -23,7 +23,10 @@ _lambo2:
 	// get "HERE"
 	ldr r0,=freemem
 	ldr r5,[r0]  // contains HERE
-_lambo3:	
+	mov r7,r5    // save for later
+	
+	// start creating the header
+_lambo3:	// row 1 in the header
 	// get the first word in the (current) list and link it to this word
 	ldr r4,=firstword
 	ldr r3,[r4]
@@ -31,26 +34,23 @@ _lambo3:
 _lambo:	
 	// then set the first word to this word
 	str r5,[r4]
-	
-	// bump the pointer and store 0 (the flags)
-	ldr r3,=0
-	add r5,#INTLEN
-	str r3,[r5]
-	
-	// bump the pointer, and store the length of the word name
-	add r5,#INTLEN
-	str r1,[r5]
 
-	// bump the pointer and store the pointer to executable code
+	// row 2 in the header
+	ldr r3,=0
+	str r3,[r5, #OFFSET_FLAGS]
+
+	// row 3 in the header
+	str r1,[r5, #OFFSET_LENGTH]
+
+	// row 4 in the header
 	// by default, this should drop something on the stack or something like
 	// that. We set the pointer to 0 as a start
-	add r5,#INTLEN
 	ldr r3,=0
-	str r3,[r5]
-	
-	// bump the pointer and store the name itself
-	add r5,#INTLEN
+	str r3,[r5, #OFFSET_EXEC]
 
+	// header created, move the pointer to the start of the word name
+	add r5,#OFFSET_NAME
+	
 	// when we are here, we have the original string in r2, and the place where we want to copy it in r5
 	// we need to move things around a bit, move r2 to r0, r5 to r1, then we call strcpy
 	push {r0,r1}
@@ -96,7 +96,8 @@ cloop:
 	cmp r1,r5
 	bne cloop
 	
-	
+	// update the header with the exec pointer
+	str r5,[r7,#OFFSET_EXEC]
 
 	// add a forth marker, increase the memory pointer
 	// and we are good to go	

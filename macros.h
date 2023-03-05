@@ -76,8 +76,8 @@ code_\label:
 	
 	#define	OFFSET_FLAGS  (INTLEN  )
 	#define OFFSET_LENGTH (INTLEN*2)
-	#define OFFSET_NAME   (INTLEN*4)
 	#define OFFSET_EXEC   (INTLEN*3)
+	#define OFFSET_NAME   (INTLEN*4)
 	
 	.macro HEADER word, wordlen, flags, label
 	RAWHEADER "\word", \wordlen, \flags, \label

@@ -382,8 +382,6 @@ _fh1:
 	
 findloop:
 	// go through the words
-
-
 	
 	push {r0}  // push FA
 	ldr r4,[r0,#OFFSET_LENGTH]
