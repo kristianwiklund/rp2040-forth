@@ -226,6 +226,7 @@ _wcopyloop:
 	KPUSH
 	DONE
 
+
 newwordhelper:
 	push {lr}
 	

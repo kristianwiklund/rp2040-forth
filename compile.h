@@ -184,18 +184,6 @@ _tickrun:
 	bl commahelper
 	DONE
 
-	
-commahelper:
-	push {lr}
-	ldr r1,=freemem
-	ldr r1,[r1]
-	KPOP
-	str r0,[r1]
-	add r1,#INTLEN
-	ldr r0,=freemem
-	str r1,[r0]
-	pop {pc}
-
 	VARIABLE "LATEST",6,LATEST,firstword
 
 	// same as comma, but for characters. causes "freemem" to become unaligned
@@ -218,17 +206,6 @@ commahelper:
 	str r1,[r0]
 
 	DONE
-
-	// r1 is an address we want to align
-alignhelper:	
-	push {r3,lr}
-	
-	add r1,#3
-	lsr r1,#2
-	ldr r3,=4
-	mul r1,r3
-	pop {r3,pc}
-	
 
 	# --------------
 	# read a constant from the list of function calls
