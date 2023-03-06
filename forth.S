@@ -507,8 +507,18 @@ interpreter:
 	bvc _goodatoi
 
 	mov r1,r0
+	ldr r2,=inputptr
+	ldr r2,[r2]
 	ldr r0,=badatoistring
 	bl printf
+
+	// then empty the execution context...
+
+	// step 1, is to empty the input buffer
+	bl restartinput
+	
+	DONE
+
 	
 _goodatoi:	
 	

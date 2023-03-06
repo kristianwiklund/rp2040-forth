@@ -5,7 +5,8 @@
 	.global FLUSHSTDIN
 	.global PROMPT, WORD
 	.global newwordhelper
-
+	.global restartinput
+	
 	# input handling
 
 	CONSTANT "SOURCE-ID",9,SOURCEID,sourceid
@@ -319,12 +320,13 @@ _mgc2:
 	cmp r0,#0		// if it is not zero
 	bne _mgc1		// continue feeding from the buffer
 
-	ldr r2,=buffer		// it is zero, set inputptr to the start
-	str r2,[r1]		// of the buffer. This will force a terminal read on the next call.
-	ldr r1,=0
-	str r1,[r2]		// and set the buffer to zero to avoid double processing
-	ldr r2,=sourceid
-	str r1,[r2]		// and set sourceid to 0 indicating that we run from the input buffer
+//	ldr r2,=buffer		// it is zero, set inputptr to the start
+//	str r2,[r1]		// of the buffer. This will force a terminal read on the next call.
+//	ldr r1,=0
+//	str r1,[r2]		// and set the buffer to zero to avoid double processing
+//	ldr r2,=sourceid
+	//	str r1,[r2]		// and set sourceid to 0 indicating that we run from the input buffer
+	bl restartinput
 	pop {r1,r2,r3,r4,pc}	// Then return the zero to the caller
 	
 _mgc1:
@@ -333,8 +335,16 @@ _mgc1:
 	
 	pop {r1,r2,r3,r4,pc}	// and return to the caller
 
-
-	
+restartinput:	
+	push {r1,r2,lr}
+	ldr r1,=inputptr	
+	ldr r2,=buffer		// it is zero, set inputptr to the start
+	str r2,[r1]		// of the buffer. This will force a terminal read on the next call.
+	ldr r1,=0
+	str r1,[r2]		// and set the buffer to zero to avoid double processing
+	ldr r2,=sourceid
+	str r1,[r2]		// and set sourceid to 0 indicating that we run from the input buffer
+	pop {r1,r2,pc}
 	
 	
 	

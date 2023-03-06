@@ -88,7 +88,8 @@ findnothingfoundmsg:
 	// error messages
 
 badatoistring:
-	.asciz "ATOI failed because '%s' is NaN\n"
+	//.asciz "ATOI failed because '%s' is NaN\n"
+	.asciz "<<%s>> %s ?\n"
 	
 finderrornull:
 	.asciz "Find: NULL pointer argument. Terminating\n"
