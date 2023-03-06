@@ -12,13 +12,17 @@
 .ascii ": SWAP >R HERE ! R> HERE @ ; "
 .ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": 2DUP OVER OVER ; "
+
 // conditionals
 .ascii ": BEGIN HERE ; IMMEDIATE "
 .ascii ": UNTIL LIT ' 0BRANCH , , ; IMMEDIATE "
 .ascii ": IF LIT ' 0BRANCH , HERE 0 , ; IMMEDIATE "
 .ascii ": THEN HERE SWAP ! ; IMMEDIATE "
-
 .ascii ": ELSE LIT ' BRANCH , HERE 0 , SWAP HERE SWAP ! ; IMMEDIATE "
+
+// incomplete
+.ascii ": ?DO POSTPONE >R POSTPONE >R HERE ; IMMEDIATE "
+.ascii ": LOOP >R 1 + ; IMMEDIATE "
 
 // math
 .ascii ": / /MOD SWAP DROP ; "
@@ -35,9 +39,18 @@
 .ascii ": 0>= 0 >= ; "
 .ascii ": 1- 1 - ; "
 
-// stack calculations that require / must come after /
-.ascii ": DEPTH SP0 SP@ + 4 / ; "
+// output and input
 
+.ascii ": CR 10 EMIT ; "
+.ascii ": SPACE 32 EMIT ; "
+.ascii ": CHAR WORD DROP C@ ; "
+.ascii ": [CHAR] LIT ' LIT , CHAR , ; IMMEDIATE "
+
+
+
+// stack calculations that require / must come after /
+.ascii ": DEPTH SP0 SP@ - 4 / ; "
+.ascii ": .S DEPTH DUP 0 > IF BEGIN DUP 4 * SP0 SWAP - @ . 1- DUP 0< UNTIL THEN DROP ; "
 
 // compilation
 .ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
@@ -53,13 +66,6 @@
 // Similar mechanism for constant. Create a word, but instead of
 // reserving memory, we compile the constant from the top of the heap, into the word itself
 .ascii ": CONSTANT WORD CREATE LIT ' LIT , , 0 , ; IMMEDIATE "
-
-// output and input
-
-.ascii ": CR 10 EMIT ; "
-.ascii ": SPACE 32 EMIT ; "
-.ascii ": CHAR WORD DROP C@ ; "
-.ascii ": [CHAR] LIT ' LIT , CHAR , ; IMMEDIATE "
 
 // number handling
 .ascii ": HEX 16 BASE ! ; "
