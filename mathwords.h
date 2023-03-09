@@ -31,8 +31,9 @@
 	KPUSH
 	DONE
 
-	# divide...
-	# using the rp2040 hardware divider
+	// divide...
+	// using the rp2040 hardware divider if PICO_BOARD is defined
+	#ifdef DPICO_BOARD
 	HEADER "/MOD",4,0,DIVMOD
 	ldr r3,=SIO_BASE
 	KPOP
@@ -52,7 +53,25 @@
 	ldr r0, [r3, #SIO_DIV_QUOTIENT_OFFSET]
 	KPUSH
 	DONE
+	#endif
 
+	// use the cortex-m3 instructions if running on the nucleo board
+	// there are probably better ways to handle this...
+	#ifdef NUCLEO_F103
+	HEADER "/MOD",4,0,DIVMOD
+	KPOP // divisor in r0
+	mov r1,r0
+	KPOP // dividend in r0
+	sdiv r1,r0
+
+	// calculate remainder here (missing now)
+	
+	mov r0,r1  // quotient
+	KPUSH
+	DONE
+	#endif
+	
+	
 	HEADER "<",1,0,LESSTHAN
 	KPOP
 	mov r1,r0

@@ -24,17 +24,22 @@
 	// convert ascii to number, or number to ascii
 	// handle any base 1-36 (1 will break horribly)
 	// itoa requires rp2040 hardware divider
-	
+
+#ifdef PICO_BOARD
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/sio.h"	
-
+#endif
 	
 	
 	// check that we are not b0rking with the wrong characters
 
 	.global myatoi, myitoa
 	.thumb_func
-
+	//	.thumb-2
+	#ifdef NUCLEO_F103
+	.cpu cortex-m3
+	#endif
+	
 	// in: r0 - string pointer to null-terminated string
 	// in: r1 - radix
 	// out: r2 - value
@@ -231,6 +236,8 @@ _reverseloop:
 
 divide:
 	push {r5,lr}
+
+	#ifdef PICO_BOARD
 	ldr r5,=SIO_BASE
 	str r0, [r5, #SIO_DIV_SDIVIDEND_OFFSET] // number we want to divide
 	str r1, [r5, #SIO_DIV_SDIVISOR_OFFSET]  // with this number
@@ -244,7 +251,13 @@ divide:
 1:
 	ldr r3, [r5, #SIO_DIV_REMAINDER_OFFSET]
 	ldr r4, [r5, #SIO_DIV_QUOTIENT_OFFSET]
+	#endif
 
+	#ifdef NUCLEO_F103
+	// do something with numbers
+	#endif
+
+	
 	pop {r5,pc}
 	
 	
