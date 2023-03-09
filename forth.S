@@ -14,19 +14,9 @@
 	#ifdef NUCLEO_F103
 	.cpu cortex-m3
 	.thumb
-	
-	.section isr_vector
-	.word main+1
-	.word main+1 // start
-	.word main+1 // nmi handler
-	.word main+1 // hard fault handler
-	.word main+1 // memory fault handler
-	.word main+1 // bus fault handler
-	.word main+1 // usage fault handler
-	.text
-	
-	
 	#endif
+	
+
 	
 #include "macros.h"
 

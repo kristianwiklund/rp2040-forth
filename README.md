@@ -16,7 +16,11 @@ It also hangs when using USB for serial. No idea why. I use an UART adapter when
 
 ## STM32F103RBT6 (STM32F103RB nucleo) "port"
 
-In progress. Linker script from https://github.com/Derppening/stm32f103/blob/master/linker/STM32F103VCT6.ld
+In progress. 
+
+* Linker script from https://github.com/Derppening/stm32f103/blob/master/linker/STM32F103VCT6.ld
+* Startup code by STMicroelectronics (startup_...-file)
+
 Build in source root, using "make". Right now, it doesn't work.
 
 
