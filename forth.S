@@ -14,7 +14,10 @@
 	#ifdef NUCLEO_F103
 	.cpu cortex-m3
 	.thumb
+
+
 	#endif
+
 	
 
 	
