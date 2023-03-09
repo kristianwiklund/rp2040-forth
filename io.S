@@ -2,9 +2,13 @@
 
 	.global stdio_init_all, getchar_timeout_us, getchar
 	.global putchar, _putchar
-	
+
+	// set up the UART
 stdio_init_all:
 	push {lr}
+
+	
+	
 	pop {pc}
 
 getchar_timeout_us:

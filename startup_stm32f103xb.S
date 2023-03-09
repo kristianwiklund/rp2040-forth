@@ -90,7 +90,7 @@ LoopFillZerobss:
   bcc FillZerobss
 
 /* Call the clock system intitialization function.*/
-//https://raw.githubusercontent.com/MayaPosch/Nodate/master/arch/stm32/asm/stm32f1/    bl  SystemInit
+   bl  SystemInit
 /* Call static constructors */
 //    bl __libc_init_array
 /* Call the application's entry point.*/
