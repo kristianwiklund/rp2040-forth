@@ -4,6 +4,10 @@
 // final word must end with 0 (hence asciz)
 // intermediate must have a space at the end to get the parser working
 
+// compilation
+.ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
+.ascii ": RECURSE UNHIDE ; IMMEDIATE "
+
 
 // stack manipulation
 //.ascii ": OFF ; "
@@ -52,9 +56,6 @@
 .ascii ": DEPTH SP0 SP@ - 4 / ; "
 .ascii ": .S DEPTH DUP 0 > IF BEGIN DUP 4 * SP0 SWAP - @ . 1- DUP 0< UNTIL THEN DROP ; "
 
-// compilation
-.ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
-.ascii ": RECURSE UNHIDE ; IMMEDIATE "
 
 
 // "Variable" creates a placeholder to a memory location that we can read and write

@@ -154,10 +154,11 @@
 #define STK_RVR 0xE000E014
 #define STK_CVR 0xE000E018
 
+	.global dw_uart_recv, dw_uart_send, dw_uart_init
 	
 	
 
-uart_recv:
+dw_uart_recv:
 	push {r1,lr}
 _uarl1:
 	GET32 (UART0_BASE_UARTFR_RW)
@@ -170,7 +171,7 @@ _uarl1:
 	pop {r1,pc}	
 	
 
-uart_send:	
+dw_uart_send:	
 	push {r1,lr}
 	push {r0}
 _uasl1:
@@ -213,7 +214,7 @@ clock_init:
 	//	}
 	pop {pc}
 
-uart_init:
+dw_uart_init:
 	push {lr}
 	bl clock_init
 

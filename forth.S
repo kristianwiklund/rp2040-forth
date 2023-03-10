@@ -32,7 +32,12 @@ main:
 	bl resetme
 	
 	mov r7, #0
-	bl stdio_init_all
+	//	bl stdio_init_all
+	bl dw_uart_init
+
+	ldr r0,='!'
+	bl dw_uart_send
+	
 	ldr r0, =hellogoodmorning
 	bl printf
 

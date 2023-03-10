@@ -33,7 +33,7 @@
 
 	// divide...
 	// using the rp2040 hardware divider if PICO_BOARD is defined
-	#ifdef DPICO_BOARD
+	#ifdef PICO_BOARD
 	HEADER "/MOD",4,0,DIVMOD
 	ldr r3,=SIO_BASE
 	KPOP
