@@ -1,3 +1,6 @@
 [submodule "printf"]
-	path = printf
+	path = submodules/printf
 	url = https://github.com/mpaland/printf
+[submodule "dwelch67-baremetal"]
+	path = submodules/dwelch67-baremetal
+	url = https://github.com/dwelch67/raspberrypi-pico
