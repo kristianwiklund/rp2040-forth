@@ -1,11 +1,9 @@
 	# -*- mode: assembler -*-
-	#ifdef PICO_BOARD
-	#include "hardware/regs/addressmap.h"
+	#include "mbed/targets/TARGET_RASPBERRYPI/TARGET_RP2040/pico-sdk/rp2040/hardware_regs/include/hardware/regs/addressmap.h"
 	#include "hardware/regs/sio.h"
-	#endif
 	
 	.thumb_func
-	.global main, done, _kpop, _kpush
+	.global forth, done, _kpop, _kpush
 	.global wordptr, firstword, freemem, inputptr, buffer
 	.global WORD, SWAP,NOP
 	.global findhelper, get_code_offset, DUP, mode, wordbuf
@@ -18,12 +16,10 @@
 
 	#endif
 
-	
 
-	
-#include "macros.h"
+#include "themacros.h"
 
-main:
+forth:
 //	ldr r0,=__vectors
 //	ldr r1,=main
 //	str r1,[r0,#0x0c]
@@ -32,7 +28,7 @@ main:
 	bl resetme
 	
 	mov r7, #0
-	bl stdio_init_all
+	//	bl stdio_init_all
 	//bl dw_uart_init
 
 	ldr r0,='!'

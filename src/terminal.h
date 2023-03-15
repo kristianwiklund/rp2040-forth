@@ -1,5 +1,5 @@
 	# -*- mode: asm -*-
-	#include "macros.h"
+	#include "themacros.h"
 	
 	.global terminalprompt
 	.global FLUSHSTDIN
@@ -81,9 +81,10 @@ _sq1:
 	HEADER "FLUSHSTDIN",10,FLAG_INVISIBLE,FLUSHSTDIN
 	ldr r0,=0	
 _fss:			
-	bl getchar_timeout_us
-	cmp r0, #0
-	bge _fss  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+//	bl getchar_timeout_us
+//	cmp r0, #0
+	//	bge _fss  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+	bl flushinput
 	DONE
 	
 	HEADER "READ-LINE",6,0,PROMPT
@@ -167,9 +168,10 @@ endloopzor:
 	// dump junk received after the newline
 _fsl:
 	push {r1}
-	bl getchar_timeout_us
-	cmp r0, #0
-	bge _fsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+//	bl getchar_timeout_us
+//	cmp r0, #0
+	//	bge _fsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+	bl flushinput
 
 	pop {r1}
 	
@@ -193,9 +195,10 @@ flushserial:
 	push {lr}  // push FSL
 	ldr r0,=0
 _ofsl:	
-	bl getchar_timeout_us
-	cmp r0, #0
-	bge _ofsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+//	bl getchar_timeout_us
+//	cmp r0, #0
+	//	bge _ofsl  // if we get a timeout due to no readable character, we get -1 returned. Continue until this happens
+	bl flushinput
 	pop {pc}  // pop FSL
 
 	

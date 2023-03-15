@@ -25,10 +25,8 @@
 	// handle any base 1-36 (1 will break horribly)
 	// itoa requires rp2040 hardware divider
 
-#ifdef PICO_BOARD
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/sio.h"	
-#endif
 	
 	
 	// check that we are not b0rking with the wrong characters
