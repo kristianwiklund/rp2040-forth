@@ -1,5 +1,5 @@
 	# -*- mode: assembler -*-
-	#include "mbed/targets/TARGET_RASPBERRYPI/TARGET_RP2040/pico-sdk/rp2040/hardware_regs/include/hardware/regs/addressmap.h"
+	#include "hardware/regs/addressmap.h"
 	#include "hardware/regs/sio.h"
 	
 	.thumb_func
