@@ -5,6 +5,8 @@ Inspired by (obvious if one read the code) - but *not a port of* - [jonesforth](
 
 It will likely never be "complete" - *the primary purpose is as a vehicle for me to learn arm (+ rp2040= assembler*.
 
+You need platformio to build.
+
 ## Bugs
 
 Yes, and lots of them.
@@ -16,12 +18,7 @@ It also hangs when using USB for serial. No idea why. I use an UART adapter when
 
 ## STM32F103RBT6 (STM32F103RB nucleo) "port"
 
-In progress. 
-
-* Linker script from https://github.com/Derppening/stm32f103/blob/master/linker/STM32F103VCT6.ld
-* Startup code by STMicroelectronics (startup_*, system_*, stm32f10x.h files) 
-
-Build in source root, using "make". Right now, it doesn't work.
+Not yet functional. Prints text, parses and creates words (except if RECURSE is used...) and freezes like crazy. Possibly because there is a lack of divide support...
 
 
 ## Implemented words (not complete)
