@@ -235,7 +235,6 @@ _reverseloop:
 divide:
 	push {r5,lr}
 
-	#ifdef PICO_BOARD
 	ldr r5,=SIO_BASE
 	str r0, [r5, #SIO_DIV_SDIVIDEND_OFFSET] // number we want to divide
 	str r1, [r5, #SIO_DIV_SDIVISOR_OFFSET]  // with this number
@@ -249,7 +248,6 @@ divide:
 1:
 	ldr r3, [r5, #SIO_DIV_REMAINDER_OFFSET]
 	ldr r4, [r5, #SIO_DIV_QUOTIENT_OFFSET]
-	#endif
 
 	#ifdef NUCLEO_F103
 	// do something with numbers

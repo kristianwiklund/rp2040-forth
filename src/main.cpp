@@ -6,7 +6,9 @@ extern "C" void flushinput();
  
 void setup() {
 
-  Serial.begin(115200);
+  //  Serial1.begin(115200);
+  printf("Test message to check that printf 10 works: %d 0x%x\nYielding control to Forth system\n",10,10);
+  
   forth();
 }
 
