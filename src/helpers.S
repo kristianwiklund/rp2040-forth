@@ -2,7 +2,7 @@
 	.global alignhelper, commahelper
 	.global mystrcpy
 	
-	#include "macros.h"
+	#include "themacros.h"
 
 	// find the next aligned word boundary
 	// In: r1 is an address we want to align
