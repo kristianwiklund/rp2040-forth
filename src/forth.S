@@ -698,8 +698,14 @@ resetme:
 	pop {pc}
 
 
+	.align 4
+	// read a word from stdin
 	.data
+forthdefs:
+	#include "forthdefs.h"
+	
 
+	
 	.align 4
 		
 sourceid:
@@ -716,7 +722,7 @@ freemem:
 mode:
 	.word 0
 debugflag:
-	.word 0
+	.word 1
 firstword:
 	.word link
 
@@ -772,11 +778,6 @@ endbuffer:
 	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
 
 
-	// read a word from stdin
-forthdefs:
-	#include "forthdefs.h"
-	
-	.align 4	
 
 heapguard:
 	.int 0x13371337
