@@ -31,7 +31,7 @@
 	
 	// check that we are not b0rking with the wrong characters
 
-	.global myatoi, myitoa
+	.global myatoi, myitoa, divide
 	.thumb_func
 	//	.thumb-2
 	#ifdef NUCLEO_F103
@@ -232,9 +232,24 @@ _reverseloop:
 	pop {r3-r5,pc}
 	
 
+	// r0 - dividend
+	// r1 - divisor
+	// r3 - remainder
+	// r4 - quotient
 divide:
 	push {r5,lr}
 
+	#ifdef STM32F1xx
+
+	sdiv r4, r0, r1
+	mov r3, r0
+	mov r5, r1
+	mul r5, r4
+	sub r3, r5
+	pop {r5,pc}
+	
+	#endif
+	
 	ldr r5,=SIO_BASE
 	str r0, [r5, #SIO_DIV_SDIVIDEND_OFFSET] // number we want to divide
 	str r1, [r5, #SIO_DIV_SDIVISOR_OFFSET]  // with this number

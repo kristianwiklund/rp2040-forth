@@ -32,7 +32,7 @@ forth:
 	//bl dw_uart_init
 
 	ldr r0,='!'
-	bl putchar
+	bl myputchar
 	
 	ldr r0, =hellogoodmorning
 	bl printf
@@ -271,7 +271,7 @@ wordsloop:
 	bl printf	   // print the word
 	
 	ldr r0,=' '        // then print a space
-	bl putchar
+	bl myputchar
 skipprint:	
 	pop {r0}	   // pop W1, recver the pointer to the next word
 	ldr r0, [r0]       // (and fetch the value)
@@ -279,7 +279,7 @@ skipprint:
 	bne wordsloop
 	
 	ldr r0,='\n'       // then finish with newline and return
-	bl putchar
+	bl myputchar
 	DONE
 
 	# access to debug flag
@@ -434,7 +434,7 @@ _roggens3:
 
 	// match
 	//ldr r0,='*'        
-	//bl putchar
+	//bl myputchar
 
 	// cleanup and return
 	pop {r0}  // push pointer to match to the value stack
@@ -769,7 +769,8 @@ forthframestackend:
 	.word 0
 forthframestackptr:
        .word forthframestackend
-	      
+
+.type buffer, object
 buffer:
 	.rept 200
 	.byte 0

@@ -86,9 +86,9 @@
 //.ascii "1 DEBUG ! "
 
 // test words - this must end the file
-//.ascii ": FAC1 ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC1 * ELSE DROP 1 THEN ; " // for reasons yet to be found, RECURSE freezes the system when running on a nucleo
+//.ascii ": FAC1 ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC1 * ELSE DROP 1 THEN ; " // does not work, for unknown reasons. Hangs on the recurse
 .ascii ": B IF 1000 . ELSE 2000 . THEN ; "
-.asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; A "
+.asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; "
 
 endofforthdefs:
 

@@ -17,10 +17,10 @@
 //	beq _hex
 //	mov r1,r0
 	ldr r0,=wordbuf2
-	bl printf
+	bl puts
 
 	ldr r0,=32
-	bl putchar
+	bl myputchar
 	
 	DONE
 _hex:
@@ -32,7 +32,7 @@ _hex:
 	# print a char from ascii on the stack
 	HEADER "EMIT",4,0,EMIT
 	KPOP
-	bl putchar
+	bl myputchar
 	DONE
 
 	# print a string from ascii pointed to by an item on the stack

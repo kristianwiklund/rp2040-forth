@@ -113,11 +113,11 @@ _rlh_nc:
 	beq _rlh1 // do not print the prompt, the previous line was empty
 	
 	ldr r0,='o'
-	bl putchar
+	bl myputchar
 	ldr r0,='k'
-	bl putchar
+	bl myputchar
 	ldr r0,='\n'
-	bl putchar
+	bl myputchar
 	  
 	// read from the terminal
 	// (cheating, with rpi library code)
@@ -128,8 +128,19 @@ _rlh1:
 
 loopzor:
 	push {r1}
-	bl getchar
-	bl putchar
+_ll1:	
+	bl cppgetchar
+	// loop if we get EOF
+	ldr r1,=0xff
+	and r0,r1
+	cmp r0,#0xFF
+	beq _ll1
+
+	push {r0}
+	bl myputchar
+	pop {r0}
+_skrovmol:
+	
 	pop {r1}
 
 	cmp r0,#'\n'
@@ -152,9 +163,9 @@ _bs1:
 
 	push {r1}
 	ldr r0,=32
-	bl putchar
+	bl myputchar
 	ldr r0,=8
-	bl putchar
+	bl myputchar
 	pop {r1}
 	b loopzor
 	
@@ -184,7 +195,7 @@ _fsl:
 	str r1,[r0]
 	
 	ldr r0,='\n'
-	bl putchar
+	bl myputchar
 
 	
 	// and return to whoever called us
