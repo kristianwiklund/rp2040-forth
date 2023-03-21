@@ -4,7 +4,7 @@
 	
 	.thumb_func
 	.global forth, done, _kpop, _kpush
-	.global wordptr, firstword, freemem, inputptr, buffer
+	.global wordptr, firstword, freemem, inputptr, buffer, padpointer, pad
 	.global WORD, SWAP,NOP
 	.global findhelper, get_code_offset, DUP, mode, wordbuf
 	.cpu cortex-m0
@@ -722,7 +722,7 @@ freemem:
 mode:
 	.word 0
 debugflag:
-	.word 1
+	.word 0
 firstword:
 	.word link
 
@@ -777,8 +777,6 @@ buffer:
 	.endr
 endbuffer:
 	// base only supports 16 and "not 16" at this time. "not 16" defaults to 10
-
-
 
 heapguard:
 	.int 0x13371337

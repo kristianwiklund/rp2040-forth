@@ -229,6 +229,8 @@ _tickrun:
 
 	# ------ memory manipulation ---------
 
+	VARIABLE "DP",2,DP,freemem
+	
 	CONSTANT "HERE",4,HERE,freemem
 //	HEADER "HERE",4,0,HERE
 //	ldr r0,=freemem
@@ -236,6 +238,19 @@ _tickrun:
 //	KPUSH
 //	DONE
 
+	
+
+//		HEADER "ALLOT",5,0,ALLOT
+//		KPOP
+//		ldr r1,=INTLEN
+//		mul r0,r1
+//		ldr r1,=freemem
+//		ldr r2,[r1]
+//		add r0,r2
+//		str r0,[r1]
+//		DONE
+	
+	
 	HEADER "@",1,0,FETCH
 	KPOP
 	ldr r0,[r0]
