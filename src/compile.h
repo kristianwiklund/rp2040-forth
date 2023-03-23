@@ -229,7 +229,9 @@ _tickrun:
 
 	# ------ memory manipulation ---------
 
-	CONSTANT "HERE",4,HERE,freemem
+	VARIABLE "DP",2,DP,freemem
+//	CONSTANT "HERE",4,HERE,freemem
+	
 //	HEADER "HERE",4,0,HERE
 //	ldr r0,=freemem
 //	ldr r0,[r0]

@@ -5,8 +5,18 @@
 // intermediate must have a space at the end to get the parser working
 
 // compilation
-.ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
-.ascii ": RECURSE UNHIDE ; IMMEDIATE "
+.ascii ": HERE DP @ ; "
+
+// "Variable" creates a placeholder to a memory location that we can read and write
+// create a named, normal word. add functionality to return the address to the storage
+// reserve storage space behind the final marker (which is a zero)
+
+// works, but need to be rewritten to use variable execution semantics
+.ascii ": VARIABLE WORD CREATE LIT ' LIT , HERE 8 + , 0 , 0 , ; IMMEDIATE "
+
+// Similar mechanism for constant. Create a word, but instead of
+// reserving memory, we compile the constant from the top of the heap, into the word itself
+.ascii ": CONSTANT WORD CREATE LIT ' LIT , , 0 , ; IMMEDIATE "
 
 
 // stack manipulation
@@ -17,12 +27,25 @@
 .ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": 2DUP OVER OVER ; "
 
+// compilations
+.ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
+.ascii ": RECURSE LATEST @ UNHIDE ; IMMEDIATE "
+.ascii ": ALLOT HERE + DP ! ALIGN ; "
+
+
 // conditionals
 .ascii ": BEGIN HERE ; IMMEDIATE "
 .ascii ": UNTIL LIT ' 0BRANCH , , ; IMMEDIATE "
 .ascii ": IF LIT ' 0BRANCH , HERE 0 , ; IMMEDIATE "
 .ascii ": THEN HERE SWAP ! ; IMMEDIATE "
 .ascii ": ELSE LIT ' BRANCH , HERE 0 , SWAP HERE SWAP ! ; IMMEDIATE "
+
+// number conversion - broken, rewrite exec semantics first
+
+//.ascii "96 ALLOT ALIGN HERE CONSTANT PAD " // scratchpad storage
+//.ascii "HERE 4 ALLOT VARIABLE HLD PAD HLD ! "// pointer to the scratchpad
+//.ascii ": <# PAD HLD ! 0 PAD C! HLD @ 1 - HLD ! ; "
+//.ascii ": # BASE @ /MOD SWAP DUP 9 > IF 7 + THEN 48 + HLD @ 1 - DUP HLD ! C! ; "
 
 // incomplete
 .ascii ": ?DO POSTPONE >R POSTPONE >R HERE ; IMMEDIATE "
@@ -58,15 +81,6 @@
 
 
 
-// "Variable" creates a placeholder to a memory location that we can read and write
-// create a named, normal word. add functionality to return the address to the storage
-// reserve storage space behind the final marker (which is a zero)
-
-.ascii ": VARIABLE WORD CREATE LIT ' LIT , HERE 8 + , 0 , 0 , ; IMMEDIATE "
-
-// Similar mechanism for constant. Create a word, but instead of
-// reserving memory, we compile the constant from the top of the heap, into the word itself
-.ascii ": CONSTANT WORD CREATE LIT ' LIT , , 0 , ; IMMEDIATE "
 
 // number handling
 .ascii ": HEX 16 BASE ! ; "
@@ -86,7 +100,11 @@
 //.ascii "1 DEBUG ! "
 
 // test words - this must end the file
-.ascii ": FAC1 ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC1 * ELSE DROP 1 THEN ; "
+
+// recurse causes a hard crash in the find loop after the change to platformio
+// focusing on integer output words atm, commenting out this
+
+.ascii ": FAC ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC * ELSE DROP 1 THEN ; "
 .ascii ": B IF 1000 . ELSE 2000 . THEN ; "
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; "
 
