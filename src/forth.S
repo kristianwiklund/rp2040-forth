@@ -384,8 +384,6 @@ findhelper:
 	pop {pc}
 
 _fh1:	
-
-		
 	// drop the address to the word header on the stack on match, zero on no match
 
 	// start at the end of the list
