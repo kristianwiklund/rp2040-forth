@@ -115,10 +115,10 @@ pushwordaddress:
 	ldr r1,[r0,#OFFSET_LENGTH]
 	mov r2,r0
 	add r2,r1
-	add r2,#OFFSET_NAME
-	add r2,#1
+	add r2,#OFFSET_NAME+1 // +1 is the zero terminator
+
 	// r2 now contains the address after the name of the word
-	
+	// adjust it
 	
 	# toggles the HIDDEN word flag
 	HEADER "HIDDEN",6,0,HIDDEN
