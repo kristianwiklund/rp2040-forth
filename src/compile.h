@@ -43,9 +43,8 @@ _lambo:
 	str r1,[r5, #OFFSET_LENGTH]
 
 	// row 4 in the header
-	// by default, this should drop something on the stack or something like
-	// that. We set the pointer to 0 as a start
-	ldr r3,=0
+	// default is to point at code that pushes the end of the word to the stack
+	ldr r3,=pushwordaddress
 	str r3,[r5, #OFFSET_EXEC]
 
 	// header created, move the pointer to the start of the word name
@@ -109,6 +108,16 @@ _created:
 	str r1,[r0]
 	
 	DONE
+
+	// figure out where the end of the word pointed to by r0 is
+	// dump it on the stack
+pushwordaddress:
+	ldr r1,[r0,#OFFSET_LENGTH]
+	mov r2,r0
+	add r2,r1
+	add r2,#OFFSET_NAME
+	add r2,#1
+	// r2 now contains the address after the name of the word
 	
 	
 	# toggles the HIDDEN word flag

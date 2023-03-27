@@ -120,7 +120,9 @@ _nodp1:
 	
 	// r1 contains the pointer to the start of the word,
 	// use the helper to get the start of the wordlist/code
-
+	// store the start of the word in r0 for use by the default exec code
+	
+	mov r0,r1
 	// we replace the calculation of the code offset by accessing the pointer in the word header.
 	// this should be a bit more robust + allows us to use the DOES> construct
 	//bl get_code_offset
