@@ -13,9 +13,12 @@
 
 	
 	HEADER "CREATE",6,0,CREATE
+	bl newwordhelper // yes, this is a hack
 	KPOP	
 	mov r1,r0 // length of the name
 	KPOP
+	
+	
 _lambo2:	
 	mov r2,r0 // pointer of the name
 	push {r1}
@@ -74,26 +77,17 @@ _cl2:
 	mov r1,r5
 	// move it to r1, and use the helper to adjust
 
+	bl alignhelper
 	
-	add r5,#15
-	lsr r5,#4
-	ldr r3,=16
-	mul r5,r3
 	ldr r0,=freemem
-	str r5,[r0]
-	
-	cmp r1,r5
-	beq _created // nothing to pad
+	str r1,[r0]
 
-	// and pad the end of the word up to the code place with a very visible filler
-	ldr r3,=0xAA
-	ldr r2,=0xFF
-cloop:
-	strb r3,[r1]
-	eor r3,r2
-	add r1,#1
-	cmp r1,r5
-	bne cloop
+	// padding removed
+	
+	// new implementation of create - we end here
+	// and do not add any forth markers
+	
+	DONE
 	
 	// add a forth marker, increase the memory pointer
 	// and we are good to go	
@@ -112,13 +106,21 @@ _created:
 	// figure out where the end of the word pointed to by r0 is
 	// dump it on the stack
 pushwordaddress:
-	ldr r1,[r0,#OFFSET_LENGTH]
-	mov r2,r0
-	add r2,r1
-	add r2,#OFFSET_NAME+1 // +1 is the zero terminator
+	ldr r2,[r0,#OFFSET_LENGTH]
+	mov r1,r0
+	add r1,r2
+	add r1,#OFFSET_NAME+1 // +1 is the zero terminator
 
-	// r2 now contains the address after the name of the word
+	// r1 now contains the address after the name of the word
 	// adjust it
+
+	bl alignhelper
+	mov r0,r1
+	KPUSH
+	DONE
+	
+	
+	
 	
 	# toggles the HIDDEN word flag
 	HEADER "HIDDEN",6,0,HIDDEN
@@ -179,8 +181,9 @@ _tickrun:
 	
 	
 	FHEADER ":",1,0,COLON
-	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
-	.int CREATE                 // creates a header for a forth word including the marker
+	//	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
+	.int CREATE                 // creates a header for a forth word excluding the marker
+	.int LIT,0xabadbeef,COMMA  // forth marker
 	.int LATEST, FETCH, HIDE  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
 	.int END
