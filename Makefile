@@ -12,3 +12,6 @@ serial:
 
 picoprobe:
 	./scripts/picoprobe.sh
+
+clean:
+	pio run -t clean

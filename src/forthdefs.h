@@ -5,7 +5,7 @@
 // intermediate must have a space at the end to get the parser working
 
 // compilation
-.ascii ": HERE DP @ ; "
+//.ascii ": HERE DP @ ; " // can be done this way, but we use it for the definition of CREATE so it has to be done in the asm code
 
 // "Variable" creates a placeholder to a memory location that we can read and write
 // create a named, normal word. add functionality to return the address to the storage
@@ -21,7 +21,8 @@
 
 // stack manipulation
 //.ascii ": OFF ; "
-//.ascii ": DUP HERE ! HERE @ HERE @ ; "
+//.ascii ": DUP HERE ! HERE @ HERE @ ; "  // can be defined in forth but is used for CREATE
+
 //.ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
 //.ascii ": SWAP >R HERE ! R> HERE @ ; "
 //.ascii ": OVER SWAP DUP ROT SWAP ; "

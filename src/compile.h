@@ -7,19 +7,42 @@
 	FHEADER "STATE",5,0,STATE
 	.word LIT,mode,FETCH,0
 
+	// memcpy
+	// (addr1 addr2 u --)
+	// copy u characters from addr1 to addr2
+	HEADER "CMOVE",4,0,CMOVE
+	KPOP
+	mov r2,r0		// r2 contains the length to copy
+	KPOP
+	mov r1,r0		// r1 contains the destination
+	KPOP
+	// r0 contains the source
+	bl mymemcpy
+	DONE
+	
 	//
 	// -- make a word placeholder
 
+	FHEADER "CREATE",6,0,CREATE
 
 	// create does roughly this:
-	// LATEST,FETCH,COMMA		-- this is the link pointer to the previously first word in the dictionary
-	// LIT,0,COMMA		 	-- initial flags (zero)
-	// WORD,COMMA			-- get the name of the word, store the string length in the header
-	// LIT,0,COMMA			-- pointer to exec context, if this is zero, call pushwordaddress
-	// <<then we copy the string that is pointed to from the first word on the value stack to HERE>>
-	// ALIGN
+	.word LATEST,FETCH,TOR			// get the address to the first word in the dictionary
+	.word HERE, LATEST, STORE		// set the first word pointer to this word
+	.word RFROM,COMMA			// and link this word to the previously first word
+	.word LIT,0,COMMA		 	// set the initial flags to zero
+	.word WORD,DUP,COMMA			// get the name of the word, store the string length in the header, saving it for later
+	.word LIT,0,COMMA			// pointer to exec context, if this is zero, call pushwordaddress
+
+	// on the stack we have this (addr1 u)
+	// we need to make the stack (addr1 here u+1)
+
+	.word TOR, HERE, RFROM			// flip the values using the call stack
+	.word LIT,1,PLUS			// the string from WORD is zero terminated, but that is not included in the length
+	.word CMOVE				// copies the word name to the word definition
+	.word ALIGN				// and aligns the storage space with word boundaries
+	.word END
 	
-	HEADER "CREATE",6,0,CREATE
+//	HEADER "CREATE",6,0,CREATE
 
 	// start by getting the next word off the input stream
 	// this could be done more efficient, but it is easier
@@ -258,7 +281,7 @@ _tickrun:
 	# ------ memory manipulation ---------
 
 	VARIABLE "DP",2,DP,freemem
-//	CONSTANT "HERE",4,HERE,freemem
+	CONSTANT "HERE",4,HERE,freemem
 	
 //	HEADER "HERE",4,0,HERE
 //	ldr r0,=freemem

@@ -491,6 +491,11 @@ _noexec:
 	HEADER "NOP",3,0,NOP
 	DONE
 
+	HEADER "DUP",3,0,DUP
+	KPOP
+	KPUSH
+	KPUSH
+	DONE
 	
 
 	// ---------- interpreter ---------

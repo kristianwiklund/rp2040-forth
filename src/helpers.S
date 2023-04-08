@@ -1,6 +1,7 @@
 	.thumb_func
 	.global alignhelper, commahelper
 	.global mystrcpy
+	.global mymemcpy
 	
 	#include "themacros.h"
 
@@ -45,3 +46,16 @@ _scl:
 	
 	pop {r2-r4,pc}
 
+	// copy r2 bytes from r0 to r1
+	// does not work if the areas are overlapping
+mymemcpy:
+	push {r2,r3,lr}
+_mmcl:
+	ldrb r3,[r0,r2]
+	strb r3,[r1,r2]
+	sub r2,#1
+	cmp r2,#0
+	bge _mmcl
+	
+	pop {r2,r3,pc}
+	
