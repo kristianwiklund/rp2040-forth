@@ -145,10 +145,11 @@ _created:
 	// figure out where the end of the word pointed to by r0 is
 	// dump it on the stack
 pushwordaddress:
-	ldr r2,[r0,#OFFSET_LENGTH]
-	mov r1,r0
+	ldr r2,[r0,#OFFSET_LENGTH] // get the length of the word name
+	mov r1,r0		   // add it to the pointer to the word
 	add r1,r2
-	add r1,#OFFSET_NAME+1 // +1 is the zero terminator
+	add r1,#1 			// +1 to include zero termination
+	add r1,#OFFSET_EXEC	  // and add the length of the header up to the start of the name
 
 	// r1 now contains the address after the name of the word
 	// adjust it
