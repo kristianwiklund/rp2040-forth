@@ -283,11 +283,21 @@ _seeword:
 	bl printf
 	pop {r0}
 _see2:	
+
+	// check if this is a variable or not
+	mov r1,r0
+	add r1,#OFFSET_EXEC
+	ldr r1,[r1]
+	
+	cmp r1,#0
+	beq _seevar
+
 	
 	// find the start of the code
 	mov r1,r0
 	bl get_code_offset
 	ldr r0,[r1]
+	
 	ldr r2,=0xabadbeef 
 	cmp r0,r2
 	beq _disasmb
@@ -335,6 +345,12 @@ _tt1:
 	beq _printstring
 	
 	b _disasm
+
+	// running SEE on a variable
+_seevar:
+	ldr r0,=seevarstring
+	bl printf
+	DONE
 	
 _printarg:
 	add r1,#INTLEN

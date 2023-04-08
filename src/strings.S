@@ -5,7 +5,7 @@
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
-	.global compilingstr,badatoistring
+	.global compilingstr,badatoistring, seevarstring
 	###
 	##	strings
 
@@ -39,6 +39,9 @@ immediatedecompilemsg:
 	.asciz "-> (immediate)\n"
 codemsg:
 	.asciz "0x%x: %s\n"
+
+seevarstring:
+	.asciz "<<variable>>\n"
 
 // debugging strings	
 
