@@ -18,8 +18,8 @@ It also hangs when using USB for serial. No idea why. I use an UART adapter when
 
 ## STM32F103RBT6 (STM32F103RB nucleo) "port"
 
-Not yet functional. Prints text, parses and creates words (except if RECURSE is used...) and freezes like crazy. Possibly because there is a lack of divide support...
-
+In progress, which is the reason for the switch to platformio from the rp2040 SDK.
+Prints things, creates words, freezes :-)
 
 ## Implemented words (not complete)
 

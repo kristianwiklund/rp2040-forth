@@ -7,108 +7,62 @@
 	FHEADER "STATE",5,0,STATE
 	.word LIT,mode,FETCH,0
 
+	// memcpy
+	// (addr1 addr2 u --)
+	// copy u characters from addr1 to addr2
+	HEADER "CMOVE",4,0,CMOVE
+	KPOP
+	mov r2,r0		// r2 contains the length to copy
+	KPOP
+	mov r1,r0		// r1 contains the destination
+	KPOP
+	// r0 contains the source
+	bl mymemcpy
+	DONE
+	
 	//
 	// -- make a word placeholder
 
+	FHEADER "CREATE",6,0,CREATE
 
-	
-	HEADER "CREATE",6,0,CREATE
-	KPOP	
-	mov r1,r0 // length of the name
-	KPOP
-_lambo2:	
-	mov r2,r0 // pointer of the name
-	push {r1}
-	
-	// get "HERE"
-	ldr r0,=freemem
-	ldr r5,[r0]  // contains HERE
-	mov r7,r5    // save for later
-	
-	// start creating the header
-_lambo3:	// row 1 in the header
-	// get the first word in the (current) list and link it to this word
-	ldr r4,=firstword
-	ldr r3,[r4]
-	str r3,[r5]
-_lambo:	
-	// then set the first word to this word
-	str r5,[r4]
+	// create does roughly this:
+	.word LATEST,FETCH,TOR			// get the address to the first word in the dictionary
+	.word HERE, LATEST, STORE		// set the first word pointer to this word
+	.word RFROM,COMMA			// and link this word to the previously first word
+	.word LIT,0,COMMA		 	// set the initial flags to zero
+	.word WORD,DUP,COMMA			// get the name of the word, store the string length in the header, saving it for later
+	.word DUP,TOR				// save the length of the string on the call stack
+	.word LIT,0,COMMA			// pointer to exec context, if this is zero, call pushwordaddress
 
-	// row 2 in the header
-	ldr r3,=0
-	str r3,[r5, #OFFSET_FLAGS]
+	// on the stack we have this (addr1 u)
+	// we need to make the stack (addr1 here u+1)
 
-	// row 3 in the header
-	str r1,[r5, #OFFSET_LENGTH]
+	.word TOR, HERE, RFROM			// flip the values using the call stack
+	.word LIT,1,PLUS			// the string from WORD is zero terminated, but that is not included in the length
+	.word CMOVE				// copies the word name to the word definition
+	.word RFROM, HERE, PLUS, LIT, 1, PLUS	// string length from call stack, calculate the end of the string
+	.word DP,STORE				// and update "HERE"
+	.word ALIGN				// and aligns the storage space with word boundaries
+	.word END
+	
+	// figure out where the end of the word pointed to by r0 is
+	// dump it on the stack
+pushwordaddress:
+	ldr r2,[r0,#OFFSET_LENGTH] // get the length of the word name
+	mov r1,r0		   // add it to the pointer to the word
+	add r1,r2
+	add r1,#1 			// +1 to include zero termination
+	add r1,#OFFSET_EXEC	  // and add the length of the header up to the start of the name
 
-	// row 4 in the header
-	// by default, this should drop something on the stack or something like
-	// that. We set the pointer to 0 as a start
-	ldr r3,=0
-	str r3,[r5, #OFFSET_EXEC]
+	// r1 now contains the address after the name of the word
+	// adjust it
 
-	// header created, move the pointer to the start of the word name
-	add r5,#FIXED_HEADER_LENGTH
-	
-	// when we are here, we have the original string in r2, and the place where we want to copy it in r5
-	// we need to move things around a bit, move r2 to r0, r5 to r1, then we call strcpy
-	push {r0,r1}
-	mov r0,r2
-	mov r1,r5
-	bl mystrcpy
-	pop {r0,r1}
-	
-	
-	pop {r1}
-_cl2:	
-	// bump the pointer to behind the word name
-	add r5,r1
-	add r5,#1
-	// terminate the string with a 0
-	ldr r3,=0
-	strb r3,[r5]
-	add r5, #1    // to not overwrite with filler (which we use for debugging...)
-	
-	// now the tricky part, align HERE to instruction boundary
-	// r5 contains the address right behind the string
-	mov r1,r5
-	// move it to r1, and use the helper to adjust
-
-	
-	add r5,#15
-	lsr r5,#4
-	ldr r3,=16
-	mul r5,r3
-	ldr r0,=freemem
-	str r5,[r0]
-	
-	cmp r1,r5
-	beq _created // nothing to pad
-
-	// and pad the end of the word up to the code place with a very visible filler
-	ldr r3,=0xAA
-	ldr r2,=0xFF
-cloop:
-	strb r3,[r1]
-	eor r3,r2
-	add r1,#1
-	cmp r1,r5
-	bne cloop
-	
-	// add a forth marker, increase the memory pointer
-	// and we are good to go	
-_created:
-	ldr r0,=freemem
-	ldr r1,[r0]
-	ldr r2,=0xabadbeef
-	str r2,[r1]
-	// update the header with the exec pointer
-	str r1,[r7,#OFFSET_EXEC]
-	add r1,#INTLEN
-	str r1,[r0]
-	
+	bl alignhelper
+	mov r0,r1
+	KPUSH
 	DONE
+	
+	
 	
 	
 	# toggles the HIDDEN word flag
@@ -170,8 +124,15 @@ _tickrun:
 	
 	
 	FHEADER ":",1,0,COLON
-	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
-	.int CREATE                 // creates a header for a forth word including the marker
+	//	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
+	.int CREATE                 // creates a header for a forth word excluding the marker
+	// we also have to set the execution pointer in the word to point
+	// at "HERE"
+	
+	.int HERE, LATEST, FETCH, LIT, OFFSET_EXEC, PLUS, STORE
+	
+	
+	.int LIT,0xabadbeef,COMMA  // forth marker
 	.int LATEST, FETCH, HIDE  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
 	.int END
@@ -230,8 +191,8 @@ _tickrun:
 	# ------ memory manipulation ---------
 
 	VARIABLE "DP",2,DP,freemem
-	
 	CONSTANT "HERE",4,HERE,freemem
+	
 //	HEADER "HERE",4,0,HERE
 //	ldr r0,=freemem
 //	ldr r0,[r0]
@@ -335,11 +296,21 @@ _seeword:
 	bl printf
 	pop {r0}
 _see2:	
+
+	// check if this is a variable or not
+	mov r1,r0
+	add r1,#OFFSET_EXEC
+	ldr r1,[r1]
+	
+	cmp r1,#0
+	beq _seevar
+
 	
 	// find the start of the code
 	mov r1,r0
 	bl get_code_offset
 	ldr r0,[r1]
+	
 	ldr r2,=0xabadbeef 
 	cmp r0,r2
 	beq _disasmb
@@ -387,6 +358,12 @@ _tt1:
 	beq _printstring
 	
 	b _disasm
+
+	// running SEE on a variable
+_seevar:
+	ldr r0,=seevarstring
+	bl printf
+	DONE
 	
 _printarg:
 	add r1,#INTLEN

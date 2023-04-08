@@ -120,14 +120,23 @@ _nodp1:
 	
 	// r1 contains the pointer to the start of the word,
 	// use the helper to get the start of the wordlist/code
-
+	// store the start of the word in r0 for use by the default exec code
+	
+	mov r0,r1
 	// we replace the calculation of the code offset by accessing the pointer in the word header.
 	// this should be a bit more robust + allows us to use the DOES> construct
 	//bl get_code_offset
 	ldr r1,[r1,#OFFSET_EXEC]
 	
 	// now we have the pointer to the code list in r1
+	// if r1 is zero, we have a variable
+	cmp r1,#0
+	bne _t7
 
+	// call the address resolver
+	ldr r1,=pushwordaddress
+	mov pc,r1
+_t7:	
 	// load the first word of whatever we are pointing at
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
@@ -382,8 +391,6 @@ findhelper:
 	pop {pc}
 
 _fh1:	
-
-		
 	// drop the address to the word header on the stack on match, zero on no match
 
 	// start at the end of the list
@@ -484,6 +491,11 @@ _noexec:
 	HEADER "NOP",3,0,NOP
 	DONE
 
+	HEADER "DUP",3,0,DUP
+	KPOP
+	KPUSH
+	KPUSH
+	DONE
 	
 
 	// ---------- interpreter ---------
