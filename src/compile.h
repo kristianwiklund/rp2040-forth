@@ -11,25 +11,40 @@
 	// -- make a word placeholder
 
 
+	// create does roughly this:
+	// LATEST,FETCH,COMMA		-- this is the link pointer to the previously first word in the dictionary
+	// LIT,0,COMMA		 	-- initial flags (zero)
+	// WORD,COMMA			-- get the name of the word, store the string length in the header
+	// LIT,0,COMMA			-- pointer to exec context, if this is zero, call pushwordaddress
+	// <<then we copy the string that is pointed to from the first word on the value stack to HERE>>
+	// ALIGN
 	
 	HEADER "CREATE",6,0,CREATE
-	bl newwordhelper // yes, this is a hack
+
+	// start by getting the next word off the input stream
+	// this could be done more efficient, but it is easier
+	// to call the helper for WORD and pop the results off
+	// the value stack
+	
+	bl newwordhelper 
 	KPOP	
 	mov r1,r0 // length of the name
 	KPOP
+
+	// we now have a pointer to a name in r0 and the length of the name in r1
 	
-	
-_lambo2:	
 	mov r2,r0 // pointer of the name
-	push {r1}
+	push {r1} // save the length for later
 	
-	// get "HERE"
+	// get "HERE", that is, the pointer to the first free memory element
 	ldr r0,=freemem
 	ldr r5,[r0]  // contains HERE
 	mov r7,r5    // save for later
 	
 	// start creating the header
-_lambo3:	// row 1 in the header
+	// we do this by pushing addresses to the memory space
+	
+	// row 1 in the header
 	// get the first word in the (current) list and link it to this word
 	ldr r4,=firstword
 	ldr r3,[r4]
@@ -47,7 +62,8 @@ _lambo:
 
 	// row 4 in the header
 	// default is to point at code that pushes the end of the word to the stack
-	ldr r3,=pushwordaddress
+	//	ldr r3,=pushwordaddress
+	ldr r3,=0
 	str r3,[r5, #OFFSET_EXEC]
 
 	// header created, move the pointer to the start of the word name

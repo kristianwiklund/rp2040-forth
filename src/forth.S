@@ -129,7 +129,14 @@ _nodp1:
 	ldr r1,[r1,#OFFSET_EXEC]
 	
 	// now we have the pointer to the code list in r1
+	// if r1 is zero, we have a variable
+	cmp r1,#0
+	bne _t7
 
+	// call the address resolver
+	ldr r1,=pushwordaddress
+	mov pc,r1
+_t7:	
 	// load the first word of whatever we are pointing at
 	// if that is number 1, the word we intend to execute
 	// is a forth-defined word
