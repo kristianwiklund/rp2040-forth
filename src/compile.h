@@ -31,6 +31,7 @@
 	.word RFROM,COMMA			// and link this word to the previously first word
 	.word LIT,0,COMMA		 	// set the initial flags to zero
 	.word WORD,DUP,COMMA			// get the name of the word, store the string length in the header, saving it for later
+	.word DUP,TOR				// save the length of the string on the call stack
 	.word LIT,0,COMMA			// pointer to exec context, if this is zero, call pushwordaddress
 
 	// on the stack we have this (addr1 u)
@@ -39,109 +40,11 @@
 	.word TOR, HERE, RFROM			// flip the values using the call stack
 	.word LIT,1,PLUS			// the string from WORD is zero terminated, but that is not included in the length
 	.word CMOVE				// copies the word name to the word definition
+	.word RFROM, HERE, PLUS, LIT, 1, PLUS	// string length from call stack, calculate the end of the string
+	.word DP,STORE				// and update "HERE"
 	.word ALIGN				// and aligns the storage space with word boundaries
 	.word END
 	
-//	HEADER "CREATE",6,0,CREATE
-
-	// start by getting the next word off the input stream
-	// this could be done more efficient, but it is easier
-	// to call the helper for WORD and pop the results off
-	// the value stack
-	
-	bl newwordhelper 
-	KPOP	
-	mov r1,r0 // length of the name
-	KPOP
-
-	// we now have a pointer to a name in r0 and the length of the name in r1
-	
-	mov r2,r0 // pointer of the name
-	push {r1} // save the length for later
-	
-	// get "HERE", that is, the pointer to the first free memory element
-	ldr r0,=freemem
-	ldr r5,[r0]  // contains HERE
-	mov r7,r5    // save for later
-	
-	// start creating the header
-	// we do this by pushing addresses to the memory space
-	
-	// row 1 in the header
-	// get the first word in the (current) list and link it to this word
-	ldr r4,=firstword
-	ldr r3,[r4]
-	str r3,[r5]
-_lambo:	
-	// then set the first word to this word
-	str r5,[r4]
-
-	// row 2 in the header
-	ldr r3,=0
-	str r3,[r5, #OFFSET_FLAGS]
-
-	// row 3 in the header
-	str r1,[r5, #OFFSET_LENGTH]
-
-	// row 4 in the header
-	// default is to point at code that pushes the end of the word to the stack
-	//	ldr r3,=pushwordaddress
-	ldr r3,=0
-	str r3,[r5, #OFFSET_EXEC]
-
-	// header created, move the pointer to the start of the word name
-	add r5,#FIXED_HEADER_LENGTH
-	
-	// when we are here, we have the original string in r2, and the place where we want to copy it in r5
-	// we need to move things around a bit, move r2 to r0, r5 to r1, then we call strcpy
-	push {r0,r1}
-	mov r0,r2
-	mov r1,r5
-	bl mystrcpy
-	pop {r0,r1}
-	
-	
-	pop {r1}
-_cl2:	
-	// bump the pointer to behind the word name
-	add r5,r1
-	add r5,#1
-	// terminate the string with a 0
-	ldr r3,=0
-	strb r3,[r5]
-	add r5, #1    // to not overwrite with filler (which we use for debugging...)
-	
-	// now the tricky part, align HERE to instruction boundary
-	// r5 contains the address right behind the string
-	mov r1,r5
-	// move it to r1, and use the helper to adjust
-
-	bl alignhelper
-	
-	ldr r0,=freemem
-	str r1,[r0]
-
-	// padding removed
-	
-	// new implementation of create - we end here
-	// and do not add any forth markers
-	
-	DONE
-	
-	// add a forth marker, increase the memory pointer
-	// and we are good to go	
-_created:
-	ldr r0,=freemem
-	ldr r1,[r0]
-	ldr r2,=0xabadbeef
-	str r2,[r1]
-	// update the header with the exec pointer
-	str r1,[r7,#OFFSET_EXEC]
-	add r1,#INTLEN
-	str r1,[r0]
-	
-	DONE
-
 	// figure out where the end of the word pointed to by r0 is
 	// dump it on the stack
 pushwordaddress:
@@ -223,6 +126,12 @@ _tickrun:
 	FHEADER ":",1,0,COLON
 	//	.int WORD //, OVER, TYPE, LIT, 32, EMIT // if we need to debug word creation
 	.int CREATE                 // creates a header for a forth word excluding the marker
+	// we also have to set the execution pointer in the word to point
+	// at "HERE"
+	
+	.int HERE, LATEST, FETCH, LIT, OFFSET_EXEC, PLUS, STORE
+	
+	
 	.int LIT,0xabadbeef,COMMA  // forth marker
 	.int LATEST, FETCH, HIDE  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
