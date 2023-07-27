@@ -3,13 +3,12 @@
 	
 	.global LIT, commahelper
 
-
+	#: STATE ( -- m) 	; m is false if in immediate mode, true if in compile mode
 	FHEADER "STATE",5,0,STATE
 	.word LIT,mode,FETCH,0
 
 	// memcpy
-	// (addr1 addr2 u --)
-	// copy u characters from addr1 to addr2
+	#: CMOVE (addr1 addr2 u --) ; copy u characters from addr1 to addr2
 	HEADER "CMOVE",4,0,CMOVE
 	KPOP
 	mov r2,r0		// r2 contains the length to copy

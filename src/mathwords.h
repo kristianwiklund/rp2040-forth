@@ -2,9 +2,7 @@
 	# ---- math ----
 
 	
-	
-	# multiply two numbers on the stack
-	
+	#: * (n1 n2 -- n) 	; n = n1 * n2
 	HEADER "*",1,0,STAR
 	KPOP
 	mov r1,r0
@@ -14,7 +12,7 @@
 	DONE
 
 	# add...
-
+	#: + (n1 n2 -- n) 	; n = n1 + n2
 	HEADER "+",1,0,PLUS
 	KPOP
 	mov r1,r0
@@ -24,7 +22,7 @@
 	DONE
 
 	# subtract...
-
+	#: - (n1 n2 -- n) 	; n = n2 - n1
 	HEADER "-",1,0,MINUS
 	KPOP
 	mov r1,r0
@@ -35,6 +33,7 @@
 
 	// divide...
 	// using the rp2040 hardware divider if PICO_BOARD is defined
+	#: / (n1 n2 -- n3 n4) 	; n3=n1 % n2, n4=n1 div n2
 	HEADER "/MOD",4,0,DIVMOD
 	ldr r3,=SIO_BASE
 	KPOP
@@ -71,7 +70,7 @@
 	DONE
 	#endif
 	
-	
+	#: < (n1 n2 -- f) 	; f is true if n1 < n2
 	HEADER "<",1,0,LESSTHAN
 	KPOP
 	mov r1,r0
@@ -86,6 +85,7 @@ _lt:
 	KPUSH
 	DONE
 
+	#: < (n1 n2 -- f) 	; f is true if n1 > n2	
 	HEADER ">",1,0,GREATERTHAN
 	KPOP
 	mov r1,r0
@@ -100,6 +100,7 @@ _gt:
 	KPUSH
 	DONE
 
+	#: = (n1 n2 -- f) 	; f is true if n1 = n2	
 	HEADER "=",1,0,EQUAL
 	KPOP
 	mov r1,r0
