@@ -6,6 +6,7 @@
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
 	.global compilingstr,badatoistring, seevarstring
+	.global underflow_msg, overflow_msg, frame_underflow_msg
 	###
 	##	strings
 
@@ -96,6 +97,15 @@ badatoistring:
 	
 finderrornull:
 	.asciz "Find: NULL pointer argument. Terminating\n"
+
+underflow_msg:
+	.asciz "stack underflow\n"
+
+overflow_msg:
+	.asciz "stack overflow\n"
+
+frame_underflow_msg:
+	.asciz "return stack underflow\n"
 
 errormsg:
 	.asciz "HardFault - restarted"

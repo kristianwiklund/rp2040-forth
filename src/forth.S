@@ -712,25 +712,60 @@ boot:
 //	.word EXECUTE
 	.int END
 
-_kpush:	
-        push {r1,r2,lr}
-        ldr r1, =vstackptr               // get the pointer to the bottom of the stack
-        ldr r2,[r1]
-        str r0,[r2]                     // store the value on the stack
-        sub r2,#INTLEN      // update the stack pointer
-        str r2,[r1]
-        pop {r1,r2,pc}
+_kpush:
+	push {r1,r2,lr}
+	ldr r1, =vstackptr
+	ldr r2,[r1]
+	str r0,[r2]                     // store the value on the stack
+	sub r2,#INTLEN                  // update the stack pointer
+	ldr r1,=stackbottom             // overflow check: new ptr must not go below stackbottom
+	cmp r2,r1
+	blo _kpush_overflow
+	ldr r1,=vstackptr
+	str r2,[r1]
+	pop {r1,r2,pc}
+
+_kpush_overflow:
+	pop {r1,r2,lr}                  // restore ARM stack before calling printf
+	ldr r0,=overflow_msg
+	bl printf
+	b _stack_restart
 
 
-_kpop:	
-	push {r1,lr}
+_kpop:
+	push {r1,r2,lr}
 	ldr r1,=vstackptr
 	ldr r0,[r1]
 	add r0,#INTLEN
+	ldr r2,=stacktop                // underflow check: new ptr must not exceed stacktop
+	cmp r0,r2
+	bhi _kpop_underflow
 	str r0,[r1]
 	ldr r0,[r1]
 	ldr r0,[r0]
-	pop {r1,pc}
+	pop {r1,r2,pc}
+
+_kpop_underflow:
+	pop {r1,r2,lr}                  // restore ARM stack before calling printf
+	ldr r0,=underflow_msg
+	bl printf
+	b _stack_restart
+
+
+// shared fault recovery: reset both Forth stacks and restart the interpreter.
+// does not wipe the dictionary, so previously defined words are preserved.
+_stack_restart:
+	ldr r0,=stacktop                // reset value stack
+	ldr r1,=vstackptr
+	str r0,[r1]
+	ldr r0,=forthframestackend      // reset frame stack
+	ldr r1,=forthframestackptr
+	str r0,[r1]
+	ldr r0,=cpustacktop             // reset ARM CPU stack to known state
+	ldr r0,[r0]
+	mov sp,r0
+	ldr r0,=bloop
+	mov pc,r0
 
 
 resetme:

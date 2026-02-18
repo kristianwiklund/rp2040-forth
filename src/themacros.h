@@ -19,12 +19,22 @@
 	.macro CFPOP reg
 	push {r6,r7}
 	ldr r7,=forthframestackptr
-	ldr r6,[r7]	
+	ldr r6,[r7]
 	add r6,#4
-	
+	ldr r7,=forthframestackend      // underflow check: new ptr must not exceed end
+	cmp r6,r7
+	bhi _cfpop_uflow_\@
+	ldr r7,=forthframestackptr      // restore r7 to write new ptr back
 	ldr \reg,[r6]
 	str r6,[r7]
 	pop {r6,r7}
+	b _cfpop_done_\@
+_cfpop_uflow_\@:
+	pop {r6,r7}                     // restore ARM stack before calling printf
+	ldr r0,=frame_underflow_msg
+	bl printf
+	b _stack_restart
+_cfpop_done_\@:
 	.endm
 
 	
