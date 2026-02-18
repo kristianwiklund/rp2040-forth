@@ -167,7 +167,7 @@ _x:
 	// in: r1 - radix
 	// in: r2 - pointer to string storage
 myitoa:
-	push {r3-r5,lr}
+	push {r3-r7,lr}         // r6/r7 reserved as DSP/RSP in future; save per AAPCS
 	mov r7,r2		// save for later
 	
 	// iterate over the number and get the number % radix and number / radix
@@ -229,8 +229,8 @@ _reverseloop:
 	
 	
 	
-	pop {r3-r5,pc}
-	
+	pop {r3-r7,pc}
+
 
 divide:
 	push {r5,lr}

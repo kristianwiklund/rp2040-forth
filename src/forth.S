@@ -376,7 +376,7 @@ skipprint:
 	DONE
 
 findhelper:
-	push {lr}
+	push {r6,r7,lr}         // r6/r7 reserved as DSP/RSP in future; save per AAPCS
 	KPOP
 	mov r1,r0 // length
 	KPOP
@@ -388,7 +388,7 @@ findhelper:
 
 	ldr r0,=finderrornull
 	bl printf
-	pop {pc}
+	pop {r6,r7,pc}
 
 _fh1:	
 	// drop the address to the word header on the stack on match, zero on no match
@@ -416,12 +416,12 @@ _roggens5:
 	ldr r3,=0
 	// r4 contains the length of the string in the word we are checking against
 
-	mov r6,r0 // contains the pointer to the word we compare
-	add r6, #OFFSET_NAME // transpose to the string part
+	mov r4,r0 // contains the pointer to the word we compare (r4 = word length = r1 here, safe to reuse)
+	add r4, #OFFSET_NAME // transpose to the string part
 
-_findtestloop:	
+_findtestloop:
 	ldrb r7,[r2,r3]
-	ldrb r0,[r6,r3]
+	ldrb r0,[r4,r3]
 _roggens4:
 	// compare strings
 	cmp r7,r0
@@ -445,22 +445,22 @@ _roggens3:
 
 	// cleanup and return
 	pop {r0}  // push pointer to match to the value stack
-	
+
 	KPUSH
 
-	pop {pc}
+	pop {r6,r7,pc}
 
 	// this is not a match, continue
 _nextfl:
 	pop {r0}	   // recover the pointer to the next word. FA
 	ldr r0, [r0]       // (and fetch the value)
 	cmp r0, #0         // continue until we reach the end of the list
-_roggens2:	
+_roggens2:
 	bne findloop
 	ldr r0,=0
 	KPUSH		   // nothing found, push 0
 
-	pop {pc}
+	pop {r6,r7,pc}
 
 	
 
