@@ -5,45 +5,72 @@
 // utility macros to move things on and off the value stack
 // both operate on r0
 
-	.macro CFPUSH reg
-	push {r6,r7}
-	ldr r7,=forthframestackptr
-	ldr r6,[r7]
-	str \reg,[r6]
-	
-	sub r6,#4
-	str r6,[r7]
-	pop {r6,r7}
+	// r6 = DSP (data stack pointer), grows down; r6 >= stacktop means empty
+	.macro KPOP
+	push {r1}
+	ldr  r1,=stacktop
+	cmp  r6,r1
+	pop  {r1}
+	bhs  _kpop_uflow_\@
+	add  r6,#4
+	ldr  r0,[r6]
+	b    _kpop_done_\@
+_kpop_uflow_\@:
+	ldr  r0,=underflow_msg
+	bl   printf
+	bl   _stack_restart
+_kpop_done_\@:
 	.endm
 
+	// r6 <= stackbottom means no room
+	.macro KPUSH
+	push {r1}
+	ldr  r1,=stackbottom
+	cmp  r6,r1
+	pop  {r1}
+	bls  _kpush_oflow_\@
+	str  r0,[r6]
+	sub  r6,#4
+	b    _kpush_done_\@
+_kpush_oflow_\@:
+	ldr  r0,=overflow_msg
+	bl   printf
+	bl   _stack_restart
+_kpush_done_\@:
+	.endm
+
+	// r7 = RSP (return/frame stack pointer), grows down; r7 >= forthframestackend means empty
 	.macro CFPOP reg
-	push {r6,r7}
-	ldr r7,=forthframestackptr
-	ldr r6,[r7]
-	add r6,#4
-	ldr r7,=forthframestackend      // underflow check: new ptr must not exceed end
-	cmp r6,r7
-	bhi _cfpop_uflow_\@
-	ldr r7,=forthframestackptr      // restore r7 to write new ptr back
-	ldr \reg,[r6]
-	str r6,[r7]
-	pop {r6,r7}
-	b _cfpop_done_\@
+	push {r1}
+	ldr  r1,=forthframestackend
+	cmp  r7,r1
+	pop  {r1}
+	bhs  _cfpop_uflow_\@
+	add  r7,#4
+	ldr  \reg,[r7]
+	b    _cfpop_done_\@
 _cfpop_uflow_\@:
-	pop {r6,r7}                     // restore ARM stack before calling printf
-	ldr r0,=frame_underflow_msg
-	bl printf
-	bl _stack_restart               // bl for ±4MB range; _stack_restart never returns
+	ldr  r0,=frame_underflow_msg
+	bl   printf
+	bl   _stack_restart
 _cfpop_done_\@:
 	.endm
 
-	
-	.macro KPOP
-	bl _kpop
-	.endm
-		
-	.macro KPUSH
-	bl _kpush
+	// r7 <= forthframestackstart means full
+	.macro CFPUSH reg
+	push {r1}
+	ldr  r1,=forthframestackstart
+	cmp  r7,r1
+	pop  {r1}
+	bls  _cfpush_oflow_\@
+	str  \reg,[r7]
+	sub  r7,#4
+	b    _cfpush_done_\@
+_cfpush_oflow_\@:
+	ldr  r0,=frame_overflow_msg
+	bl   printf
+	bl   _stack_restart
+_cfpush_done_\@:
 	.endm
 
 	.macro DONE

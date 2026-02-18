@@ -3,7 +3,8 @@
 	#include "hardware/regs/sio.h"
 	
 	.thumb_func
-	.global forth, done, _kpop, _kpush
+	.global forth, done, _stack_restart
+	.global stacktop, stackbottom, forthframestackend, forthframestackstart
 	.global wordptr, firstword, freemem, inputptr, buffer
 	.global WORD, SWAP,NOP
 	.global findhelper, get_code_offset, DUP, mode, wordbuf
@@ -26,8 +27,7 @@ forth:
 	// reset things
 
 	bl resetme
-	
-	mov r7, #0
+
 	//	bl stdio_init_all
 	//bl dw_uart_init
 
@@ -306,8 +306,7 @@ skipprint:
 	// constants to get the state of the stack
 	// fetch the current stack pointer
 	HEADER "SP@",3,0,SPFETCH
-	ldr r0,=vstackptr
-	ldr r0,[r0]
+	mov r0,r6
 	KPUSH
 	DONE
 
@@ -331,15 +330,13 @@ skipprint:
 	DONE
 
 	HEADER "RP@",3,0,RPFETCH
-	ldr r0,=forthframestackptr
-	ldr r0,[r0]
+	mov r0,r7
 	KPUSH
 	DONE
 
 	HEADER "RP!",3,0,RPSTORE
 	KPOP
-	ldr r1,=forthframestackptr
-	str r0,[r1]
+	mov r7,r0
 	DONE
 
 	HEADER "RP0",3,0,RP0
@@ -376,7 +373,7 @@ skipprint:
 	DONE
 
 findhelper:
-	push {r6,r7,lr}         // r6/r7 reserved as DSP/RSP in future; save per AAPCS
+	push {lr}               // r6=DSP, r7=RSP are live registers; do NOT save/restore them
 	KPOP
 	mov r1,r0 // length
 	KPOP
@@ -388,9 +385,9 @@ findhelper:
 
 	ldr r0,=finderrornull
 	bl printf
-	pop {r6,r7,pc}
+	pop {pc}
 
-_fh1:	
+_fh1:
 	// drop the address to the word header on the stack on match, zero on no match
 
 	// start at the end of the list
@@ -420,19 +417,21 @@ _roggens5:
 	add r4, #OFFSET_NAME // transpose to the string part
 
 _findtestloop:
-	ldrb r7,[r2,r3]
-	ldrb r0,[r4,r3]
+	push {r1}               // save length; use r1 as byte temp
+	ldrb r1,[r2,r3]         // r1 = target byte
+	ldrb r0,[r4,r3]         // r0 = dict byte
 _roggens4:
 	// compare strings
-	cmp r7,r0
+	cmp r1,r0
 	beq _rg1
 	
 	add r5,#1
-_rg1:	
+_rg1:
+	pop {r1}                // restore length
 
 	add r3,#1
 	cmp r3,r1
-_roggens3:	
+_roggens3:
 	blt _findtestloop
 
 	// not a match
@@ -448,7 +447,7 @@ _roggens3:
 
 	KPUSH
 
-	pop {r6,r7,pc}
+	pop {pc}
 
 	// this is not a match, continue
 _nextfl:
@@ -460,7 +459,7 @@ _roggens2:
 	ldr r0,=0
 	KPUSH		   // nothing found, push 0
 
-	pop {r6,r7,pc}
+	pop {pc}
 
 	
 
@@ -513,20 +512,20 @@ _noexec:
 
 	// ( a b c -- b c a )
 	HEADER "ROT",3,0,ROT
-	push {r4, r5, r6}
+	push {r4, r5}
 	KPOP		// r0 = c (top)
 	mov r4, r0
 	KPOP		// r0 = b (second)
 	mov r5, r0
 	KPOP		// r0 = a (third)
-	mov r6, r0
+	mov r3, r0
 	mov r0, r5
 	KPUSH		// push b
 	mov r0, r4
 	KPUSH		// push c
-	mov r0, r6
+	mov r0, r3
 	KPUSH		// push a (now top)
-	pop {r4, r5, r6}
+	pop {r4, r5}
 	DONE
 
 	// ( a b -- a b a )
@@ -658,47 +657,40 @@ wordcompile:
 //	DONE
 	
 	// print a stacktrace of the calls from where we are to the first 0
-	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE // disabled
-	// start with the stack pointer, read each item, move up until we have a zero
-
-	// print basic information about the call stack
-	ldr r0, =stacktracestring
+	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE
+	push {r5}
+	ldr r0,=stacktracestring
 	ldr r1,=forthframestackstart
-	ldr r2,=forthframestackptr
-	ldr r2,[r2]
+	mov r2,r7               // RSP direct from register
 	bl printf
-	
-	ldr r7,=forthframestackstart
+
+	ldr r5,=forthframestackstart  // r5 = loop pointer
 
 _stl1:
-	ldr r1,[r7] // pointer to somewhere in a list. this is the _next_ word we intend to execute.
+	ldr r1,[r5]
 	cmp r1,#0
 	bne _stl2
 
-	// if we are here, we are at the "end marker" (which is NULL)
-	push {r7}
 	ldr r0,=stacktracenullstring
-	mov r1,r7
-	bl printf
-	pop {r7}
+	mov r1,r5
+	bl printf               // printf preserves r5 (AAPCS callee-saved)
 	b _strl3
-_stl2:
 
-	ldr r1,[r1] // actual pointer to a word - to the _next_ word we intend to execute.
+_stl2:
+	ldr r1,[r1]             // actual pointer to a word (next word to execute)
 	mov r3,r1
 	add r3,#OFFSET_NAME
 	mov r2,r1
-	mov r1,r7
+	mov r1,r5
 	ldr r0,=callstackmsg
-	push {r7}
-	bl printf
-	pop {r7}
-_strl3:				
-	add r7,#4
-	ldr r6,=forthframestackptr
-	ldr r6,[r6]
-	cmp r7,r6
+	bl printf               // printf preserves r5
+
+_strl3:
+	add r5,#4
+	cmp r5,r7               // done when r5 > r7 (= RSP)
 	ble _stl1
+
+	pop {r5}
 	DONE
 	
 	
@@ -712,55 +704,11 @@ boot:
 //	.word EXECUTE
 	.int END
 
-_kpush:
-	push {r1,r2,lr}
-	ldr r1, =vstackptr
-	ldr r2,[r1]
-	str r0,[r2]                     // store the value on the stack
-	sub r2,#INTLEN                  // update the stack pointer
-	ldr r1,=stackbottom             // overflow check: new ptr must not go below stackbottom
-	cmp r2,r1
-	blo _kpush_overflow
-	ldr r1,=vstackptr
-	str r2,[r1]
-	pop {r1,r2,pc}
-
-_kpush_overflow:
-	pop {r1,r2,r3}                  // pop 3 to match push {r1,r2,lr}; r3 absorbs saved lr
-	ldr r0,=overflow_msg
-	bl printf
-	b _stack_restart
-
-
-_kpop:
-	push {r1,r2,lr}
-	ldr r1,=vstackptr
-	ldr r0,[r1]
-	add r0,#INTLEN
-	ldr r2,=stacktop                // underflow check: new ptr must not exceed stacktop
-	cmp r0,r2
-	bhi _kpop_underflow
-	str r0,[r1]
-	ldr r0,[r1]
-	ldr r0,[r0]
-	pop {r1,r2,pc}
-
-_kpop_underflow:
-	pop {r1,r2,r3}                  // pop 3 to match push {r1,r2,lr}; r3 absorbs saved lr
-	ldr r0,=underflow_msg
-	bl printf
-	b _stack_restart
-
-
 // shared fault recovery: reset both Forth stacks and restart the interpreter.
 // does not wipe the dictionary, so previously defined words are preserved.
 _stack_restart:
-	ldr r0,=stacktop                // reset value stack
-	ldr r1,=vstackptr
-	str r0,[r1]
-	ldr r0,=forthframestackend      // reset frame stack
-	ldr r1,=forthframestackptr
-	str r0,[r1]
+	ldr r6,=stacktop                // reset value stack pointer
+	ldr r7,=forthframestackend      // reset frame stack pointer
 	ldr r0,=cpustacktop             // reset ARM CPU stack to known state
 	ldr r0,[r0]
 	mov sp,r0
@@ -786,10 +734,8 @@ resetme:
 	mov r1,sp
 	str r1,[r0]
 
-	ldr r0,=forthframestackptr
-	ldr r1,=forthframestackend
-	str r1,[r0]
-	
+	ldr r6,=stacktop
+	ldr r7,=forthframestackend
 	pop {pc}
 
 
@@ -816,9 +762,6 @@ firstword:
 	.word link
 
 	.align 4
-vstackptr:
-	.word stacktop
-	
 stackbottom:
 	.rept 200
 	.int 0
@@ -856,9 +799,7 @@ forthframestackstart:
        .endr
 forthframestackend:
 	.word 0
-forthframestackptr:
-       .word forthframestackend
-	      
+
 buffer:
 	.rept 200
 	.byte 0

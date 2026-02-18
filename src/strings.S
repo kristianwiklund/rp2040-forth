@@ -6,7 +6,7 @@
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
 	.global compilingstr,badatoistring, seevarstring
-	.global underflow_msg, overflow_msg, frame_underflow_msg
+	.global underflow_msg, overflow_msg, frame_underflow_msg, frame_overflow_msg
 	###
 	##	strings
 
@@ -106,6 +106,9 @@ overflow_msg:
 
 frame_underflow_msg:
 	.asciz "return stack underflow\n"
+
+frame_overflow_msg:
+	.asciz "return stack overflow\n"
 
 errormsg:
 	.asciz "HardFault - restarted"
