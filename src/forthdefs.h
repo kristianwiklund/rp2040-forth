@@ -23,9 +23,6 @@
 //.ascii ": OFF ; "
 // .ascii ": DUP HERE ! HERE @ HERE @ ; "  // can be defined in forth but is used for CREATE
 
-.ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
-.ascii ": SWAP >R HERE ! R> HERE @ ; "
-.ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": 2DUP OVER OVER ; "
 
 // compilations

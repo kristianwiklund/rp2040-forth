@@ -496,7 +496,55 @@ _noexec:
 	KPUSH
 	KPUSH
 	DONE
-	
+
+	// ( a b -- b a )
+	HEADER "SWAP",4,0,SWAP
+	push {r4, r5}
+	KPOP		// r0 = b (top)
+	mov r4, r0
+	KPOP		// r0 = a (second)
+	mov r5, r0
+	mov r0, r4
+	KPUSH		// push b
+	mov r0, r5
+	KPUSH		// push a (now top)
+	pop {r4, r5}
+	DONE
+
+	// ( a b c -- b c a )
+	HEADER "ROT",3,0,ROT
+	push {r4, r5, r6}
+	KPOP		// r0 = c (top)
+	mov r4, r0
+	KPOP		// r0 = b (second)
+	mov r5, r0
+	KPOP		// r0 = a (third)
+	mov r6, r0
+	mov r0, r5
+	KPUSH		// push b
+	mov r0, r4
+	KPUSH		// push c
+	mov r0, r6
+	KPUSH		// push a (now top)
+	pop {r4, r5, r6}
+	DONE
+
+	// ( a b -- a b a )
+	HEADER "OVER",4,0,OVER
+	push {r4, r5}
+	KPOP		// r0 = b (top)
+	mov r4, r0
+	KPOP		// r0 = a (second)
+	mov r5, r0
+	mov r0, r5
+	KPUSH		// push a
+	mov r0, r4
+	KPUSH		// push b
+	mov r0, r5
+	KPUSH		// push a (now top)
+	pop {r4, r5}
+	DONE
+
 
 	// ---------- interpreter ---------
 	
