@@ -726,7 +726,7 @@ _kpush:
 	pop {r1,r2,pc}
 
 _kpush_overflow:
-	pop {r1,r2,lr}                  // restore ARM stack before calling printf
+	pop {r1,r2,r3}                  // pop 3 to match push {r1,r2,lr}; r3 absorbs saved lr
 	ldr r0,=overflow_msg
 	bl printf
 	b _stack_restart
@@ -746,7 +746,7 @@ _kpop:
 	pop {r1,r2,pc}
 
 _kpop_underflow:
-	pop {r1,r2,lr}                  // restore ARM stack before calling printf
+	pop {r1,r2,r3}                  // pop 3 to match push {r1,r2,lr}; r3 absorbs saved lr
 	ldr r0,=underflow_msg
 	bl printf
 	b _stack_restart

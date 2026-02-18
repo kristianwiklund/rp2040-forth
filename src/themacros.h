@@ -33,7 +33,7 @@ _cfpop_uflow_\@:
 	pop {r6,r7}                     // restore ARM stack before calling printf
 	ldr r0,=frame_underflow_msg
 	bl printf
-	b _stack_restart
+	bl _stack_restart               // bl for ±4MB range; _stack_restart never returns
 _cfpop_done_\@:
 	.endm
 
