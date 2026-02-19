@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Forth interpreter for the RP2040 (Raspberry Pi Pico) written in ARM Thumb assembly, with an in-progress STM32F103 port. It is a learning project for ARM/RP2040 assembly — not intended to be a complete or production Forth.
 
-**Known issues:** No error handling, hangs with USB serial (use UART), some words broken (EXECUTE, FIND).
+**Known issues:** No error handling, hangs with USB serial (use UART), FIND may be broken.
 
 ## Build & Flash
 
@@ -28,12 +28,20 @@ The STM32F103 target has its own `stm32f103/Makefile`.
 
 ### Execution Model
 
-The interpreter is a **threaded-code** Forth. Words are stored as linked list nodes in memory. The `wordptr` global tracks the current execution pointer (analogous to Forth's IP — instruction pointer).
+The interpreter is a **threaded-code** Forth. Words are stored as linked list nodes in memory. Register **r5** is the Forth instruction pointer (IP), holding the address of the next word pointer to execute.
 
-- `done` / `execute` (in `src/forth.S`): the inner interpreter loop. Reads the word at `wordptr`, advances `wordptr`, and dispatches.
+- `done` / `execute` (in `src/forth.S`): the inner interpreter loop. Reads the word pointer at r5, advances r5, and dispatches.
 - Native (assembler) words jump directly to their ARM code.
-- Forth-defined words are detected by the magic sentinel `0xabadbeef` at the start of their code field. The interpreter saves the return address on the Forth frame stack and starts executing the new word list.
+- Forth-defined words are detected by `FLAG_FORTH_WORD` (0x10) in the header flags field. The interpreter saves r5 on the Forth frame stack and sets r5 to the exec ptr (start of the new word list).
 - `DONE` macro: jumps back to `done` (the inner interpreter). Every assembler word ends with `DONE`.
+
+### Register Conventions
+
+| Register | Role | Save/restore? |
+|---|---|---|
+| r5 | IP (Forth instruction pointer) | Yes — any word using r5 as temp must save and restore it |
+| r6 | DSP (data stack pointer) | No — dedicated, never save/restore |
+| r7 | RSP (return/frame stack pointer) | No — dedicated, never save/restore |
 
 ### Word Header Layout (`themacros.h`)
 
@@ -44,8 +52,8 @@ Each word in the dictionary is a 16-byte-aligned struct:
 ```
 
 - `exec ptr == 0` → variable (pushes its own data address)
-- `exec ptr → 0xabadbeef` → Forth-defined word (list of word pointers + `0` terminator)
-- otherwise → ARM assembler code
+- `FLAG_FORTH_WORD` set in flags → Forth-defined word (exec ptr points at first word pointer in a `0`-terminated list)
+- otherwise → ARM assembler code (native word)
 
 Offsets: `OFFSET_FLAGS=4`, `OFFSET_LENGTH=8`, `OFFSET_EXEC=12`, `OFFSET_NAME=16`.
 
@@ -54,17 +62,17 @@ Offsets: `OFFSET_FLAGS=4`, `OFFSET_LENGTH=8`, `OFFSET_EXEC=12`, `OFFSET_NAME=16`
 | Macro | Purpose |
 |---|---|
 | `HEADER word, len, flags, label` | Define a native assembler word |
-| `FHEADER word, len, flags, label` | Define a Forth-defined word (adds `0xabadbeef` marker) |
-| `RAWHEADER` | Low-level header without the marker |
-| `KPUSH` / `KPOP` | Push/pop the value (data) stack (calls `_kpush`/`_kpop`, operate on `r0`) |
-| `CFPUSH reg` / `CFPOP reg` | Push/pop the Forth frame (return) stack |
+| `FHEADER word, len, flags, label` | Define a Forth-defined word (sets `FLAG_FORTH_WORD` in flags) |
+| `RAWHEADER` | Low-level header without extra flags |
+| `KPUSH` / `KPOP` | Push/pop the data stack — inline macros operating on r0, using r6 as DSP |
+| `CFPUSH reg` / `CFPOP reg` | Push/pop the Forth frame (return) stack, using r7 as RSP |
 | `DONE` | Jump to inner interpreter (`done`) |
 | `CONSTANT` / `VARIABLE` | Convenience macros for declaring constants/variables |
 
 ### Stacks
 
-- **Value stack**: software-managed in `.data` (`stackbottom`…`stacktop`), pointer at `vstackptr`. Grows downward.
-- **Frame/return stack**: software-managed (`forthframestackstart`…`forthframestackend`), pointer at `forthframestackptr`. Used for Forth call/return and `>R`/`R>`.
+- **Value stack**: software-managed in `.data` (`stackbottom`…`stacktop`), pointer in **r6** (DSP, dedicated register). Grows downward.
+- **Frame/return stack**: software-managed (`forthframestackstart`…`forthframestackend`), pointer in **r7** (RSP, dedicated register). Used for Forth call/return and `>R`/`R>`.
 - **CPU stack**: ARM `sp`, used within individual word implementations.
 
 ### Source Files
@@ -87,7 +95,7 @@ Offsets: `OFFSET_FLAGS=4`, `OFFSET_LENGTH=8`, `OFFSET_EXEC=12`, `OFFSET_NAME=16`
 ### Boot Sequence
 
 1. `main.cpp` `setup()` calls `forth()`.
-2. `forth()` (`forth.S`) initializes globals, sets `wordptr` to the `boot` list.
+2. `forth()` (`forth.S`) initializes r5 (IP) to `=boot`, r6 to `stacktop`, r7 to `forthframestackend`.
 3. `boot` list: `FLUSHSTDIN → INTERPRET → END`.
 4. `INTERPRET` reads from `inputptr`, which starts pointing at `forthdefs` (the ASCII Forth source compiled in via `.ascii`/`.asciz`).
 5. After `forthdefs` is exhausted, `INTERPRET` reads from the UART.

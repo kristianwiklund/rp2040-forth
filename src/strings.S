@@ -58,8 +58,6 @@ debugwordmsg:
 
 hexnumber:
 	.asciz "%x "
-hexdebug:
-	.asciz "wordptr: %x\n"
 
 compiling:
 	.asciz " <C> "

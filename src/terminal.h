@@ -51,17 +51,17 @@ _sq1:
 	ldr r0,=freemem
 	str r1,[r0]
 
-	pop {r5}   // retrieve the address to the string
+	pop {r4}   // retrieve the address to the string
 	pop {r0}   // update the jump
-	
+
 	str r1,[r0]
 
 	// compile the string pointer as literal
 	ldr r0,=LIT
-	KPUSH	
+	KPUSH
 	bl commahelper
-	
-	mov r0,r5
+
+	mov r0,r4
 	KPUSH
 	bl commahelper
 

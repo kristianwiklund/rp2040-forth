@@ -85,6 +85,7 @@ _cfpush_done_\@:
 	#define FLAG_IMMEDIATE   0x2
 	#define FLAG_ONLYCOMPILE 0x4
 	#define FLAG_INVISIBLE   0x8 // not listed in WORDS listing
+	#define FLAG_FORTH_WORD  0x10 // word body is a Forth word list, not native asm
 	#define END 0x0
 	
 	.set link,0  // magically increasing linked list pointer
@@ -155,8 +156,8 @@ end_\label:
 //	blx main
 	
 	.macro FHEADER word, wordlen, flags, label
-	RAWHEADER "\word", \wordlen, \flags, \label
-	.int 0xabadbeef // signals that this is a forth-defined word
+	RAWHEADER "\word", \wordlen, (\flags | FLAG_FORTH_WORD), \label
+	// exec field now points directly at the first word pointer — no sentinel
 	.endm
 	
 #endif

@@ -94,6 +94,16 @@ pushwordaddress:
 	DONE
 	
 
+	// set FLAG_FORTH_WORD on the most recently created word (used by ':')
+	HEADER "FMARK",5,FLAG_INVISIBLE,FMARK
+	ldr r0,=firstword
+	ldr r0,[r0]               // r0 = latest word header address
+	ldr r1,[r0,#OFFSET_FLAGS]
+	ldr r2,=FLAG_FORTH_WORD
+	orr r1,r2
+	str r1,[r0,#OFFSET_FLAGS]
+	DONE
+
 	HEADER "'",1,FLAG_IMMEDIATE,TICK
 	ldr r0,=mode
 	ldr r0,[r0]
@@ -131,7 +141,7 @@ _tickrun:
 	.int HERE, LATEST, FETCH, LIT, OFFSET_EXEC, PLUS, STORE
 	
 	
-	.int LIT,0xabadbeef,COMMA  // forth marker
+	.int FMARK                  // set FLAG_FORTH_WORD on the new word's header
 	.int LATEST, FETCH, HIDE  // LATEST provides the address to the varible containing the latest word link, fetch fetches its content, HIDDEN hides it from searches
 	.int RBRAC			// go to compile mode
 	.int END
@@ -177,14 +187,9 @@ _tickrun:
 	# read a constant from the list of function calls
 	
 	HEADER "LIT",3,0,LIT
-	ldr r0, =wordptr  	// grab the next thing in the function list
-	ldr r1,[r0]
-	mov r2,r1
-
-	add r1,#4		// then increase the function list pointer and store it 
-	str r1,[r0]		// store wordptr
-	ldr r0,[r2]		// r0 now contains the value we want to store on the stack
-	KPUSH			// and push it on the value stack
+	ldr r0,[r5]     // r0 = literal value at IP
+	add r5,#4       // advance IP past literal
+	KPUSH
 	DONE
 
 	# ------ memory manipulation ---------
@@ -233,31 +238,17 @@ _tickrun:
 	// pulls thing from stack. if thing is zero, jumps to
 	// the address in the next word in the list - otherwise, it discards it
 	HEADER "0BRANCH",7,FLAG_ONLYCOMPILE,ZBRANCH
-	// get the next word and bump the pointer
-	ldr r0,=wordptr
-	ldr r1,[r0] // where it points
-	ldr r2,[r1] // the next word
-	add r1,#4
-	str r1,[r0]
-
-	
-	KPOP
+	ldr r1,[r5]     // r1 = branch target
+	add r5,#4       // optimistically advance IP past branch target
+	KPOP            // r0 = condition; KPOP saves/restores r1 internally
 	cmp r0,#0
-	bne _zb1
-
-	ldr r0,=wordptr
-	str r2,[r0] // change where it points
-//	ldr r0,=hexnumber
-//	mov r1,r2
-//	bl printf
-_zb1:	
+	bne _zb1        // non-zero: no branch, continue
+	mov r5,r1       // zero: take the branch
+_zb1:
 	DONE
 
 	HEADER "BRANCH",6,FLAG_ONLYCOMPILE,BRANCH
-	ldr r0,=wordptr
-	ldr r1,[r0] // where it points
-	ldr r2,[r1] // the next word
-	str r2,[r0]
+	ldr r5,[r5]     // IP = *IP (unconditional absolute jump)
 	DONE
 
 	// locate a word and decompile it
@@ -284,38 +275,35 @@ _seeword:
 _see2:	
 
 	// check if this is a variable or not
-	mov r1,r0
-	add r1,#OFFSET_EXEC
-	ldr r1,[r1]
-	
+	ldr r1,[r0,#OFFSET_EXEC]
 	cmp r1,#0
 	beq _seevar
 
-	
-	// find the start of the code
-	mov r1,r0
-	bl get_code_offset
-	ldr r0,[r1]
-	
-	ldr r2,=0xabadbeef 
-	cmp r0,r2
-	beq _disasmb
-	// assembler word
+	// test FLAG_FORTH_WORD — no dereference needed
+	ldr r2,[r0,#OFFSET_FLAGS]
+	ldr r3,=FLAG_FORTH_WORD
+	tst r2,r3
+	bne _disasmb
+
+	// native asm word: r1 = exec ptr
 	ldr r0,=asmmsg
 	bl printf
 	DONE
+
 _disasmb:
+	// Forth word: exec ptr is the start of the word list (no sentinel to skip)
+	ldr r1,[r0,#OFFSET_EXEC]
 	push {r1}
 	ldr r0,=forthmsg
 	bl printf
 	pop {r1}
+	// fall straight into _disasm with r1 pointing AT the first word pointer
+
 _disasm:
-	// run through the word until we find a zero
-	add r1,#INTLEN
-	ldr r0,[r1]
+	ldr r0,[r1]               // read word at current position
 	cmp r0,#0
 	beq _disasmend
-_tt1:	
+_tt1:
 	// r0 contains the pointer to the word
 	// add the name offset, then print it
 	push {r0,r1}
@@ -325,24 +313,12 @@ _tt1:
 	bl printf
 	pop {r0,r1}
 
-	// there are a  few special names
+	ldr r2,=ZBRANCH;  cmp r0,r2; beq _printarg
+	ldr r2,=LIT;      cmp r0,r2; beq _printarg
+	ldr r2,=BRANCH;   cmp r0,r2; beq _printarg
+	ldr r2,=SKIPSTRING; cmp r0,r2; beq _printstring
 
-	ldr r2,=ZBRANCH
-	cmp r0,r2
-	beq _printarg
-	
-	ldr r2,=LIT
-	cmp r0,r2
-	beq _printarg
-
-	ldr r2,=BRANCH
-	cmp r0,r2
-	beq _printarg
-
-	ldr r2,=SKIPSTRING
-	cmp r0,r2
-	beq _printstring
-	
+	add r1,#INTLEN            // advance to next word
 	b _disasm
 
 	// running SEE on a variable
@@ -350,15 +326,16 @@ _seevar:
 	ldr r0,=seevarstring
 	bl printf
 	DONE
-	
+
 _printarg:
-	add r1,#INTLEN
+	add r1,#INTLEN            // advance past current word to the arg
 	push {r0,r1}
 	ldr r0,[r1]
 	mov r1,r0
 	ldr r0,=argstr
 	bl printf
 	pop {r0,r1}
+	add r1,#INTLEN            // advance past the arg
 	b _disasm
 
 _printstring:
@@ -372,15 +349,12 @@ _printstring:
 	push {r0,r1}
 	add r1,#INTLEN
 	ldr r0,=argstrstr
-_psb1:	
 	bl printf
 	pop {r0,r1}
-	ldr r1,[r1] // new pointer (skip the string)
-	sub r1,#INTLEN
-	
+	ldr r1,[r1]               // follow the skip-to pointer (no sentinel compensation needed)
 	b _disasm
-	
-_disasmend:	
+
+_disasmend:
 	DONE
 	
 	// set the immediate flag
@@ -407,10 +381,7 @@ _disasmend:
 
 	// not for general use, set to invisible
 	HEADER "SKIPSTRING",10,FLAG_INVISIBLE,SKIPSTRING
-	ldr r0, =wordptr  	// grab the next thing in the function list
-	ldr r1,[r0]
-	ldr r1,[r1]		// and move the pointer to it
-	str r1,[r0]
+	ldr r5,[r5]     // IP = *IP (identical to BRANCH at runtime)
 	DONE
 
 	
