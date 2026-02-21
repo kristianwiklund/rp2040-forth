@@ -5,6 +5,10 @@ Inspired by (obvious if one read the code) - but *not a port of* - [jonesforth](
 
 It will likely never be "complete" - *the primary purpose is as a vehicle for me to learn arm (+ rp2040= assembler*.
 
+## Claude
+
+There is a claude branch that possibly solves several bugs, but I haven't tested it on real hardware yet.
+
 ## Bugs
 
 Yes, and lots of them.
