@@ -50,6 +50,24 @@ firmware fixes that follow.
 |---|-----|-----|------------|------------|
 | 7 | **006** — `DEPTH` returns N+1 | `forthdefs.h`: change `: DEPTH SP0 SP@ - 4 / ;` → `: DEPTH SP@ SP0 SWAP - 4 / ;` | One-liner | Blocks 007 |
 | 8 | **007** — `.S` prints garbage | Fix address formula after 006 is verified — also has independent off-by-one (reads counter slot, misses deepest item) | Small | Requires 006 |
+
+#### Bug 007 root cause (recorded after fix)
+
+KPUSH stores at `[r6]` **then** decrements r6. So with N items on the stack:
+- `r6 = stacktop - N×4`  (DSP sits one word **below** TOS)
+- TOS lives at `r6+4 = stacktop - (N-1)×4`
+- Bottom item lives at `stacktop` (= `SP0`)
+
+`.S` calls `DEPTH` first, which pushes the count (N) onto the stack, writing it at
+`[stacktop - N×4]`. The loop body then computes `SP0 - k×4` for k = N…1. At k=N
+that evaluates to `stacktop - N×4` — the slot just written by DEPTH's own KPUSH, not
+the original TOS. And at k=1 it evaluates to `stacktop-4`, missing the bottom item
+at `stacktop` entirely.
+
+Fix: replace `SP0` with `SP0 4 +` in the loop. Now `(SP0+4) - k×4`:
+- k=N:   `stacktop+4 - N×4`     = `stacktop - (N-1)×4`  = TOS   ✓
+- k=N-1: `stacktop+4 - (N-1)×4` = `stacktop - (N-2)×4`  = NOS   ✓
+- k=1:   `stacktop+4 - 1×4`     = `stacktop`             = bottom ✓
 | 9 | **001** — `>` borrows `_lt` label from `<` | `mathwords.h`: change `bgt _lt` → `bgt _gt`; fix doc comment | One-liner | None |
 | 10 | **004** — `wordbuf2` aliased between WORD and DOT | Give DOT its own `numbuf` scratch buffer in `output.h` | Small | None |
 
