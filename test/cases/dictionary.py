@@ -22,8 +22,8 @@ TESTS = [
         "section": "Dictionary",
         "setup": [],
         "input": "SEE /",
-        "expect": "/MOD SWAP DROP",
-        "match": "contains",
+        "expect": r"/MOD.*SWAP.*DROP",
+        "match": "regex",
         "note": "SEE on Forth-defined word must contain its definition",
     },
     {

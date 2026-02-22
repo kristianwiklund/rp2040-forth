@@ -24,7 +24,7 @@ TESTS = [
         "input": "1 2 SWAP . .",
         "expect": "1 2 ",
         "match": "exact",
-        "note": "SWAP: TOS=2 printed first",
+        "note": "SWAP ( x1 x2 -- x2 x1 ): x1=1 is new TOS, printed first by . .",
     },
     {
         "id": "2.4",

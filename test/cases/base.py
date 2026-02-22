@@ -12,10 +12,10 @@ TESTS = [
         "id": "5.2",
         "section": "Base / Number Representation",
         "setup": [],
-        "input": "HEX 1a . DEC",
-        "expect": "1a ",
+        "input": "HEX 1a DEC .",
+        "expect": "26 ",
         "match": "exact",
-        "note": "Hex input 1a parsed as 26 decimal; output in DEC",
+        "note": "Parse 1a in hex (=26), switch to decimal, then print: verifies base-switch",
     },
     {
         "id": "5.3",
