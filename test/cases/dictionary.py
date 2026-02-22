@@ -22,9 +22,9 @@ TESTS = [
         "section": "Dictionary",
         "setup": [],
         "input": "SEE /",
-        "expect": r"/MOD.*SWAP.*DROP",
+        "expect": r"(?s)/MOD.*SWAP.*DROP",
         "match": "regex",
-        "note": "SEE on Forth-defined word must contain its definition",
+        "note": "SEE on Forth-defined word: each word on its own line; (?s) lets .* cross newlines",
     },
     {
         "id": "10.4",
