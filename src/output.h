@@ -8,7 +8,7 @@
 	KPOP
 	ldr r1,=base
 	ldr r1,[r1]
-	ldr r2,=wordbuf2
+	ldr r2,=numbuf
 	bl myitoa
 
 //	ldr r2,=base
@@ -16,7 +16,7 @@
 //	cmp r2,#16
 //	beq _hex
 //	mov r1,r0
-	ldr r0,=wordbuf2
+	ldr r0,=numbuf
 	bl printf
 
 	ldr r0,=32
@@ -49,6 +49,9 @@ _type_fmt: .asciz "%s"
 	.int LIT,base
 	.int END
 
+.data
+numbuf: .space 32
+.text
 
 
-	
+

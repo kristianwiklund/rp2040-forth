@@ -76,8 +76,8 @@ TESTS = [
         "section": "Stack Manipulation",
         "setup": [],
         "input": "10 20 30 .S DROP DROP DROP",
-        "expect": "10 20 30 ",
+        "expect": "30 20 10 ",
         "match": "exact",
-        "note": "Prints all items without consuming them; then clean up",
+        "note": "Prints TOS-first; stack 10(bot) 20 30(TOS) → output: 30 20 10",
     },
 ]

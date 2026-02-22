@@ -74,8 +74,8 @@
 
 
 // stack calculations that require / must come after /
-.ascii ": DEPTH SP0 SP@ - 4 / ; "
-.ascii ": .S DEPTH DUP 0 > IF BEGIN DUP 4 * SP0 SWAP - @ . 1- DUP 0< UNTIL THEN DROP ; "
+.ascii ": DEPTH SP@ SP0 SWAP - 4 / ; "
+.ascii ": .S DEPTH DUP 0 > IF BEGIN DUP 4 * SP0 SWAP - @ . 1- DUP 0= UNTIL THEN DROP ; "
 
 
 

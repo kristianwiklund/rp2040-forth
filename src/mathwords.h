@@ -85,13 +85,13 @@ _lt:
 	KPUSH
 	DONE
 
-	#: < (n1 n2 -- f) 	; f is true if n1 > n2	
+	#: > (n1 n2 -- f)	; f is true if n1 > n2
 	HEADER ">",1,0,GREATERTHAN
 	KPOP
 	mov r1,r0
 	KPOP
 	cmp r0,r1
-	bgt _lt
+	bgt _gt
 	ldr r0,=0
 	KPUSH
 	DONE
