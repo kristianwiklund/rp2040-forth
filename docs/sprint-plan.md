@@ -84,6 +84,18 @@ Fix: replace `SP0` with `SP0 4 +` in the loop. Now `(SP0+4) - k×4`:
 
 ---
 
+## Sprint 4 — Divide-by-Zero Safety
+
+*Single firmware fix; no other open bugs in the original backlog.*
+
+| # | Bug | Fix | Complexity |
+|---|-----|-----|------------|
+| 13 | **013** — `/MOD` pushes garbage on divisor=0 | `mathwords.h`: zero-check divisor before SIO write; `_divmod_zero` handler pops dividend, prints error | Small |
+
+Test 12.4 promoted from permanent `skip` to `"match": "contains"`.
+
+---
+
 ## Dependency Graph
 
 ```
@@ -110,3 +122,4 @@ Fix: replace `SP0` with `SP0 4 +` in the loop. Now `(SP0+4) - k×4`:
 | **2a** | 010, 011, 012 | Make test suite trustworthy |
 | **2b** | 006, 007, 001, 004 | Correct behavior + working debug tools |
 | **3**  | 005, 009 | Edge case polish |
+| **4**  | 013 | Divide-by-zero safety |
