@@ -169,6 +169,10 @@ def extract_output(raw, input_line):
     if nl == -1:
         return text.strip()
     after_echo = text[nl + 1:]
+    # The interpreter emits one blank line between the input echo and output;
+    # strip that single structural newline so it does not pollute comparisons.
+    if after_echo.startswith("\n"):
+        after_echo = after_echo[1:]
     # Strip trailing "ok\n"
     if after_echo.endswith("ok\n"):
         after_echo = after_echo[:-3]
