@@ -22,7 +22,7 @@ TESTS = [
         "section": "Stack Manipulation",
         "setup": [],
         "input": "1 2 SWAP . .",
-        "expect": "2 1 ",
+        "expect": "1 2 ",
         "match": "exact",
         "note": "SWAP: TOS=2 printed first",
     },
