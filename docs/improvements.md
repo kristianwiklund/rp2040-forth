@@ -21,7 +21,7 @@ temporaries. Broken Forth definitions removed from `src/forthdefs.h`.
 
 ---
 
-## #2 — Stack underflow/overflow detection in `_kpop` and `CFPOP`
+## [DONE] #2 — Stack underflow/overflow detection in `_kpop` and `CFPOP`
 
 **Problem:** The value stack and frame stack have no bounds checking. A stack underflow
 silently corrupts adjacent memory and is the most common class of Forth bug. Currently the
@@ -59,7 +59,7 @@ additional tripwire for overflow in the other direction.
 
 ---
 
-## #3 — Dedicate registers for stack pointers
+## [DONE] #3 — Dedicate registers for stack pointers
 
 **Problem:** `vstackptr` and `forthframestackptr` are globals in `.data`. Every `KPUSH` /
 `KPOP` costs a function call (`bl _kpush` / `bl _kpop`) plus two indirect memory accesses
@@ -183,7 +183,7 @@ The push/pop can be removed, but leaving them is harmless.
 
 ---
 
-## #4 — Dedicate a register for the instruction pointer (IP)
+## [DONE] #4 — Dedicate a register for the instruction pointer (IP)
 
 **Problem:** `wordptr` is a global variable. The inner interpreter loop (`done`/`execute`
 in `forth.S`) does a `ldr r0, =wordptr` (literal pool load) followed by `ldr r1, [r0]`
@@ -229,7 +229,7 @@ after #3.
 
 ---
 
-## #5 — Replace the `0xabadbeef` sentinel with a flag bit
+## [DONE] #5 — Replace the `0xabadbeef` sentinel with a flag bit
 
 **Problem:** Distinguishing native words from Forth-defined words currently requires
 dereferencing the exec pointer and comparing the first 4 bytes to `0xabadbeef`. This is an
