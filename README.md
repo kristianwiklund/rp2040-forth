@@ -5,9 +5,6 @@ Inspired by (obvious if one read the code) - but *not a port of* - [jonesforth](
 
 It will likely never be "complete" - *the primary purpose is as a vehicle for me to learn arm (+ rp2040= assembler*.
 
-## Claude
-
-There is a claude branch that possibly solves several bugs, but I haven't tested it on real hardware yet.
 
 ## Bugs
 
@@ -15,8 +12,6 @@ Yes, and lots of them.
 
 Notably, there is no error handling at all. This is by design (as in - I haven't gotten around to fixing it yet). 
 Use an SWD adapter (picoprobe, jlink, ...) with gdb to avoid having to pull the plug all the time. You want one anyway, it makes life easier.
-
-It also hangs when using USB for serial. No idea why. I use an UART adapter when developing and haven't prioritized a fix.
 
 ## STM32F103RBT6 (STM32F103RB nucleo) "port"
 
