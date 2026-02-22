@@ -51,7 +51,7 @@ pushwordaddress:
 	mov r1,r0		   // add it to the pointer to the word
 	add r1,r2
 	add r1,#1 			// +1 to include zero termination
-	add r1,#OFFSET_EXEC	  // and add the length of the header up to the start of the name
+	add r1,#OFFSET_NAME	  // and add the length of the header up to the end of the name / start of data
 
 	// r1 now contains the address after the name of the word
 	// adjust it

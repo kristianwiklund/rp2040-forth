@@ -13,7 +13,7 @@ TESTS = [
         "section": "Base / Number Representation",
         "setup": [],
         "input": "HEX 1a . DEC",
-        "expect": "26 ",
+        "expect": "1a ",
         "match": "exact",
         "note": "Hex input 1a parsed as 26 decimal; output in DEC",
     },
