@@ -40,8 +40,8 @@ TESTS = [
         "section": "Base / Number Representation",
         "setup": [],
         "input": "HEX 1A . DEC",
-        "expect": None,
-        "match": "skip",
-        "note": "Uppercase hex rejected — known failure (bug #005)",
+        "expect": "1a ",
+        "match": "exact",
+        "note": "Uppercase hex 1A accepted; . outputs in hex mode as 1a",
     },
 ]

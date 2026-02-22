@@ -110,6 +110,8 @@ _convloop:
 	ble _convcont
 
 	// check if the digit is A or more. if we get here, and it is, it is a bad digit
+	mov r6, #0x20
+	orr r3, r3, r6		// fold A-Z to a-z; safe for all chars > '9' at this point
 	cmp r3,#'a'
 	blt _myatoierrorpop
 
@@ -178,14 +180,28 @@ myitoa:
 	cmp r0,#0
 	bge _itoa_loop
 
+	ldr r3,=0x80000000		// INT_MIN check
+	cmp r0,r3
+	beq _itoa_intmin_loop		// unsigned division path for INT_MIN
 	neg r0,r0	// if negative, convert to positive before creating the string
+	b _itoa_loop
 
-	
+
+_itoa_intmin_loop:			// handles INT_MIN (0x80000000) via unsigned division
+	bl udivide
+	ldrb r3,[r5, r3]
+	strb r3,[r2]
+	add r2, #1
+	mov r0,r4
+	cmp r0, #0
+	bne _itoa_intmin_loop
+	b _itoa_sign_and_reverse
+
 _itoa_loop:
-	
+
 	bl divide // get remainder and quotient between the number and the radix
 
-	// r3 contains the remainder. 
+	// r3 contains the remainder.
 	ldrb r3,[r5, r3] // do a lookup in the digits table to get the character to store
 	strb r3,[r2]     // store it
 	add r2, #1       // and increment the pointer
@@ -195,6 +211,7 @@ _itoa_loop:
 	cmp r0, #0
 	bne _itoa_loop
 
+_itoa_sign_and_reverse:
 	pop {r0} 	// restore number
 	cmp r0,#0
 	bge _not_negative_itoa
@@ -255,8 +272,30 @@ divide:
 
 	
 	pop {r5,pc}
-	
-	
+
+
+// Unsigned variant of divide, used by myitoa for INT_MIN (0x80000000).
+// neg on INT_MIN overflows back to itself; treating it as unsigned gives the
+// correct decimal digits.  Calling convention identical to divide.
+udivide:
+	push {r5,lr}
+
+	ldr r5,=SIO_BASE
+	str r0, [r5, #SIO_DIV_UDIVIDEND_OFFSET]	// unsigned dividend
+	str r1, [r5, #SIO_DIV_UDIVISOR_OFFSET]		// unsigned divisor
+
+	// delay 8 cycles
+	b 1f
+1:	b 1f
+1:	b 1f
+1:	b 1f
+1:
+	ldr r3, [r5, #SIO_DIV_REMAINDER_OFFSET]
+	ldr r4, [r5, #SIO_DIV_QUOTIENT_OFFSET]
+
+	pop {r5,pc}
+
+
 digits:
 
 	// because.
