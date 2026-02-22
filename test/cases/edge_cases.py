@@ -31,9 +31,9 @@ TESTS = [
         "section": "Edge Cases",
         "setup": [],
         "input": "10 0 /MOD",
-        "expect": None,
-        "match": "skip",
-        "note": "Division by zero; RP2040 SIO hardware undefined; may hang — do not send",
+        "expect": "division by zero",
+        "match": "contains",
+        "note": "Division by zero: firmware prints error, discards both operands, returns cleanly",
     },
     {
         "id": "12.5",

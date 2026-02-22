@@ -5,7 +5,7 @@
 	.global asmmsg, codemsg, argstr, forthmsg, immediatemsg, argstrstr
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
-	.global compilingstr,badatoistring, seevarstring
+	.global compilingstr,badatoistring, seevarstring, divbyzero_msg
 	.global underflow_msg, overflow_msg, frame_underflow_msg, frame_overflow_msg
 	###
 	##	strings
@@ -107,6 +107,9 @@ frame_underflow_msg:
 
 frame_overflow_msg:
 	.asciz "return stack overflow\n"
+
+divbyzero_msg:
+	.asciz "division by zero\n"
 
 errormsg:
 	.asciz "HardFault - restarted"

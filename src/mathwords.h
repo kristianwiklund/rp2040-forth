@@ -33,18 +33,20 @@
 
 	// divide...
 	// using the rp2040 hardware divider if PICO_BOARD is defined
-	#: / (n1 n2 -- n3 n4) 	; n3=n1 % n2, n4=n1 div n2
+	#: /MOD (n1 n2 -- rem quot) 	; rem=n1 % n2, quot=n1 / n2; prints error and returns on divide by zero
 	HEADER "/MOD",4,0,DIVMOD
 	ldr r3,=SIO_BASE
-	KPOP
+	KPOP                                    // r0 = divisor
+	cmp r0,#0
+	beq _divmod_zero
 	str r0, [r3, #SIO_DIV_SDIVISOR_OFFSET]
 	KPOP
-	str r0, [r3, #SIO_DIV_SDIVIDEND_OFFSET	]
+	str r0, [r3, #SIO_DIV_SDIVIDEND_OFFSET]
 
 	// delay 8 cycles
 
 	b 1f
-1: 	b 1f	
+1: 	b 1f
 1: 	b 1f
 1: 	b 1f
 1:
@@ -52,6 +54,12 @@
 	KPUSH
 	ldr r0, [r3, #SIO_DIV_QUOTIENT_OFFSET]
 	KPUSH
+	DONE
+
+_divmod_zero:
+	KPOP                                    // discard dividend, restore clean stack
+	ldr r0,=divbyzero_msg
+	bl printf
 	DONE
 
 	// use the cortex-m3 instructions if running on the nucleo board
