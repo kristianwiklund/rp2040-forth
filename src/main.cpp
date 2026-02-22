@@ -37,6 +37,9 @@ void setup() {
     }
     delay(100);
 
+    // Disable stdio buffering so printf output appears immediately (no newline needed).
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     printf("Forth/RP2040 ready\n");
     forth();
 }
