@@ -23,14 +23,11 @@
 //.ascii ": OFF ; "
 // .ascii ": DUP HERE ! HERE @ HERE @ ; "  // can be defined in forth but is used for CREATE
 
-.ascii ": ROT >R >R HERE ! R> R> HERE @ ; "
-.ascii ": SWAP >R HERE ! R> HERE @ ; "
-.ascii ": OVER SWAP DUP ROT SWAP ; "
 .ascii ": 2DUP OVER OVER ; "
 
 // compilations
 .ascii ": POSTPONE WORD FIND , ; IMMEDIATE "
-.ascii ": RECURSE LATEST @ UNHIDE ; IMMEDIATE "
+.ascii ": RECURSE LATEST @ , ; IMMEDIATE "
 .ascii ": ALLOT HERE + DP ! ALIGN ; "
 
 
@@ -105,7 +102,7 @@
 // recurse causes a hard crash in the find loop after the change to platformio
 // focusing on integer output words atm, commenting out this
 
-.ascii ": FAC ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC * ELSE DROP 1 THEN ; "
+// .ascii ": FAC ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC * ELSE DROP 1 THEN ; "
 .ascii ": B IF 1000 . ELSE 2000 . THEN ; "
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; "
 

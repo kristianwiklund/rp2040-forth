@@ -6,6 +6,7 @@
 	.global callstackfullstring, callstackemptystring, stacktracestring,  stacktracenullstring, callstackmsg
 	.global finderrornull, findnothingfoundmsg, charvscharmsg, searchingformsg
 	.global compilingstr,badatoistring, seevarstring
+	.global underflow_msg, overflow_msg, frame_underflow_msg, frame_overflow_msg
 	###
 	##	strings
 
@@ -57,8 +58,6 @@ debugwordmsg:
 
 hexnumber:
 	.asciz "%x "
-hexdebug:
-	.asciz "wordptr: %x\n"
 
 compiling:
 	.asciz " <C> "
@@ -96,6 +95,18 @@ badatoistring:
 	
 finderrornull:
 	.asciz "Find: NULL pointer argument. Terminating\n"
+
+underflow_msg:
+	.asciz "stack underflow\n"
+
+overflow_msg:
+	.asciz "stack overflow\n"
+
+frame_underflow_msg:
+	.asciz "return stack underflow\n"
+
+frame_overflow_msg:
+	.asciz "return stack overflow\n"
 
 errormsg:
 	.asciz "HardFault - restarted"

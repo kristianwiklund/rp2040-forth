@@ -3,8 +3,9 @@
 	#include "hardware/regs/sio.h"
 	
 	.thumb_func
-	.global forth, done, _kpop, _kpush
-	.global wordptr, firstword, freemem, inputptr, buffer
+	.global forth, done, _stack_restart
+	.global stacktop, stackbottom, forthframestackend, forthframestackstart
+	.global firstword, freemem, inputptr, buffer
 	.global WORD, SWAP,NOP
 	.global findhelper, get_code_offset, DUP, mode, wordbuf
 	.cpu cortex-m0
@@ -26,8 +27,7 @@ forth:
 	// reset things
 
 	bl resetme
-	
-	mov r7, #0
+
 	//	bl stdio_init_all
 	//bl dw_uart_init
 
@@ -37,12 +37,7 @@ forth:
 	ldr r0, =hellogoodmorning
 	bl printf
 
-	# execute the functions linked from "words"
-	ldr r0,=wordptr
-	ldr r1,=boot
-	str r1,[r0]
-
-	
+	// r5 (IP) is already set to =boot by resetme
 	ldr r0,=0
 	CFPUSH r0
 //	push {r0} // end of input exec marker
@@ -54,25 +49,12 @@ forth:
 	// remove immediate & compile logic from this function
 
 
-execute:	
+execute:
 done:
-//	ldr r0,=hexdebug
-//	ldr r1,=wordptr
-//	ldr r1,[r1]
-//	bl printf
-
-	// execute the next word in the list, unless we are done executing words in the list
-	
-	ldr r0, =wordptr
-	ldr r1,[r0]
-	mov r2,r1
-_t2:	
-	add r1,#4   // increase the pointer one step
-	str r1,[r0]
-_t1:	
-	ldr r1,[r2]
-	cmp r1, #0
-	beq endoflist // end of the list handler
+	ldr r1,[r5]     // r1 = word header address at IP
+	add r5,#4       // advance IP
+	cmp r1,#0
+	beq endoflist   // end of the list handler
 
 
 //	push {r1}             // push A
@@ -125,10 +107,8 @@ _nodp1:
 	mov r0,r1
 	// we replace the calculation of the code offset by accessing the pointer in the word header.
 	// this should be a bit more robust + allows us to use the DOES> construct
-	//bl get_code_offset
-	ldr r1,[r1,#OFFSET_EXEC]
-	
-	// now we have the pointer to the code list in r1
+	ldr r1,[r0,#OFFSET_EXEC]
+
 	// if r1 is zero, we have a variable
 	cmp r1,#0
 	bne _t7
@@ -136,83 +116,33 @@ _nodp1:
 	// call the address resolver
 	ldr r1,=pushwordaddress
 	mov pc,r1
-_t7:	
-	// load the first word of whatever we are pointing at
-	// if that is number 1, the word we intend to execute
-	// is a forth-defined word
+_t7:
+	// test FLAG_FORTH_WORD flag — no sentinel dereference needed
+	ldr r2,[r0,#OFFSET_FLAGS]
+	ldr r3,=FLAG_FORTH_WORD
+	tst r2,r3
+	bne handleforthword
 
-	
-	ldr r2,[r1]
-_t6:
-	ldr r5,=0xabadbeef
-	cmp r2,r5
-	beq handleforthword
+	mov pc,r1          // native asm word: jump to its code
 
-//	push {r1}
-//	ldr r0,=codedebugstring
-//	bl printf
-//	pop {r1}
-	
-	mov pc,r1 // jump to the next word in the list
-
-	// handle a word written in forth.
-	
 handleforthword:
-//	push {r1}
-//	ldr r0,=forthwordstring
-//	bl printf
-//	pop {r1}
-	// start by bumping the address to the next item in the list,
-	// which is a pointer to an actual word
-	add r1,#INTLEN
-
-	ldr r0,=wordptr
-	ldr r2,[r0]
-
-	CFPUSH r2
-	//push {r2}        // push item we want to execute when we are done with this word, to the stack
-	
-	str r1,[r0]      // store wordptr
-	mov r1,r2
-	// when we are here, we will execute a word written in forth
-	// record the call in the call trace
-//	bl pushforthcall
-//	bl pushforthcall // reasons. - to keep a trace once we pop the trace in DONE
-	DONE             // and run the word
-		
-
-
-	
-endoflist:
-	// here we need to pop the old pointer, if the old pointer is zero, we go to prompt
-	CFPOP r0
-	//pop {r0}
-	cmp r0,#0
-	beq reallydone
-_t3:	
-	ldr r1,=wordptr
-	str r0,[r1]      // store wordptr
+	CFPUSH r5          // save IP (return address)
+	mov r5,r1          // IP = exec ptr = start of Forth word list
 	DONE
-	
-reallydone:	
-//	ldr r0, =donemsg
-//	bl printf
+
+endoflist:
+	// pop the saved IP; if zero, we are at the top level
+	CFPOP r5
+	cmp r5,#0
+	beq reallydone
+	DONE
+
+reallydone:
 bloop:
-
-	// restart the machine:
-	// execute the functions linked from "words"
-	ldr r0,=wordptr
-	ldr r1,=boot
-	str r1,[r0]       // store wordptr
-
+	// restart the machine
+	ldr r5,=boot       // reset IP to boot list
 	ldr r0,=0
-
-	CFPUSH r0
-	//push {r0} // end of input exec marker
-	// record it in the list
-//	mov r1,r0
-//	bl pushforthcall
-
+	CFPUSH r0          // push 0 sentinel
 	b execute
 
 //	.global isr_hardfault
@@ -306,8 +236,7 @@ skipprint:
 	// constants to get the state of the stack
 	// fetch the current stack pointer
 	HEADER "SP@",3,0,SPFETCH
-	ldr r0,=vstackptr
-	ldr r0,[r0]
+	mov r0,r6
 	KPUSH
 	DONE
 
@@ -331,15 +260,13 @@ skipprint:
 	DONE
 
 	HEADER "RP@",3,0,RPFETCH
-	ldr r0,=forthframestackptr
-	ldr r0,[r0]
+	mov r0,r7
 	KPUSH
 	DONE
 
 	HEADER "RP!",3,0,RPSTORE
 	KPOP
-	ldr r1,=forthframestackptr
-	str r0,[r1]
+	mov r7,r0
 	DONE
 
 	HEADER "RP0",3,0,RP0
@@ -376,7 +303,7 @@ skipprint:
 	DONE
 
 findhelper:
-	push {lr}
+	push {r5,lr}            // r5=IP must be saved; r6=DSP, r7=RSP are live, do NOT save/restore them
 	KPOP
 	mov r1,r0 // length
 	KPOP
@@ -388,9 +315,9 @@ findhelper:
 
 	ldr r0,=finderrornull
 	bl printf
-	pop {pc}
+	pop {r5,pc}
 
-_fh1:	
+_fh1:
 	// drop the address to the word header on the stack on match, zero on no match
 
 	// start at the end of the list
@@ -416,23 +343,25 @@ _roggens5:
 	ldr r3,=0
 	// r4 contains the length of the string in the word we are checking against
 
-	mov r6,r0 // contains the pointer to the word we compare
-	add r6, #OFFSET_NAME // transpose to the string part
+	mov r4,r0 // contains the pointer to the word we compare (r4 = word length = r1 here, safe to reuse)
+	add r4, #OFFSET_NAME // transpose to the string part
 
-_findtestloop:	
-	ldrb r7,[r2,r3]
-	ldrb r0,[r6,r3]
+_findtestloop:
+	push {r1}               // save length; use r1 as byte temp
+	ldrb r1,[r2,r3]         // r1 = target byte
+	ldrb r0,[r4,r3]         // r0 = dict byte
 _roggens4:
 	// compare strings
-	cmp r7,r0
+	cmp r1,r0
 	beq _rg1
 	
 	add r5,#1
-_rg1:	
+_rg1:
+	pop {r1}                // restore length
 
 	add r3,#1
 	cmp r3,r1
-_roggens3:	
+_roggens3:
 	blt _findtestloop
 
 	// not a match
@@ -445,41 +374,47 @@ _roggens3:
 
 	// cleanup and return
 	pop {r0}  // push pointer to match to the value stack
-	
+
 	KPUSH
 
-	pop {pc}
+	pop {r5,pc}
 
 	// this is not a match, continue
 _nextfl:
 	pop {r0}	   // recover the pointer to the next word. FA
 	ldr r0, [r0]       // (and fetch the value)
 	cmp r0, #0         // continue until we reach the end of the list
-_roggens2:	
+_roggens2:
 	bne findloop
 	ldr r0,=0
 	KPUSH		   // nothing found, push 0
 
-	pop {pc}
+	pop {r5,pc}
 
 	
 
 	// -- run a word pointed to by the topmost item on the stack
-	// only works for non-forth-words
+	// ( xt -- )
 	HEADER "EXECUTE",7,0,EXECUTE
-	KPOP				// this contains an execution token
-	cmp r0,#0			// ...or zero. If zero, don't crash the machine.
-	beq _noexec
+	KPOP                       // r0 = execution token (word header address)
+	cmp r0,#0
+	beq _noexec                // guard: 0 token = no-op
 
-	// craft a very short list containing the exec token to this word and a zero
+	ldr r1,[r0,#OFFSET_EXEC]   // r1 = exec ptr
+	cmp r1,#0
+	beq _noexec                // variable — not executable, ignore
 
-	ldr r1,=execbuf
-	str r0,[r1]
+	ldr r2,[r0,#OFFSET_FLAGS]
+	ldr r3,=FLAG_FORTH_WORD
+	tst r2,r3
+	bne _exec_forth
 
-	CFPUSH r1
-	
-	// and let it fall through to DONE
-	
+	mov pc,r1                  // native word: jump directly
+
+_exec_forth:
+	CFPUSH r5                  // save return IP
+	mov r5,r1                  // IP = exec ptr (start of Forth word list)
+	DONE
 
 _noexec:
 	DONE
@@ -496,7 +431,55 @@ _noexec:
 	KPUSH
 	KPUSH
 	DONE
-	
+
+	// ( a b -- b a )
+	HEADER "SWAP",4,0,SWAP
+	push {r4, r5}
+	KPOP		// r0 = b (top)
+	mov r4, r0
+	KPOP		// r0 = a (second)
+	mov r5, r0
+	mov r0, r4
+	KPUSH		// push b
+	mov r0, r5
+	KPUSH		// push a (now top)
+	pop {r4, r5}
+	DONE
+
+	// ( a b c -- b c a )
+	HEADER "ROT",3,0,ROT
+	push {r4, r5}
+	KPOP		// r0 = c (top)
+	mov r4, r0
+	KPOP		// r0 = b (second)
+	mov r5, r0
+	KPOP		// r0 = a (third)
+	mov r3, r0
+	mov r0, r5
+	KPUSH		// push b
+	mov r0, r4
+	KPUSH		// push c
+	mov r0, r3
+	KPUSH		// push a (now top)
+	pop {r4, r5}
+	DONE
+
+	// ( a b -- a b a )
+	HEADER "OVER",4,0,OVER
+	push {r4, r5}
+	KPOP		// r0 = b (top)
+	mov r4, r0
+	KPOP		// r0 = a (second)
+	mov r5, r0
+	mov r0, r5
+	KPUSH		// push a
+	mov r0, r4
+	KPUSH		// push b
+	mov r0, r5
+	KPUSH		// push a (now top)
+	pop {r4, r5}
+	DONE
+
 
 	// ---------- interpreter ---------
 	
@@ -610,47 +593,40 @@ wordcompile:
 //	DONE
 	
 	// print a stacktrace of the calls from where we are to the first 0
-	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE // disabled
-	// start with the stack pointer, read each item, move up until we have a zero
-
-	// print basic information about the call stack
-	ldr r0, =stacktracestring
+	HEADER "ST",2,FLAG_HIDDEN,STACKTRACE
+	push {r5}
+	ldr r0,=stacktracestring
 	ldr r1,=forthframestackstart
-	ldr r2,=forthframestackptr
-	ldr r2,[r2]
+	mov r2,r7               // RSP direct from register
 	bl printf
-	
-	ldr r7,=forthframestackstart
+
+	ldr r5,=forthframestackstart  // r5 = loop pointer
 
 _stl1:
-	ldr r1,[r7] // pointer to somewhere in a list. this is the _next_ word we intend to execute.
+	ldr r1,[r5]
 	cmp r1,#0
 	bne _stl2
 
-	// if we are here, we are at the "end marker" (which is NULL)
-	push {r7}
 	ldr r0,=stacktracenullstring
-	mov r1,r7
-	bl printf
-	pop {r7}
+	mov r1,r5
+	bl printf               // printf preserves r5 (AAPCS callee-saved)
 	b _strl3
-_stl2:
 
-	ldr r1,[r1] // actual pointer to a word - to the _next_ word we intend to execute.
+_stl2:
+	ldr r1,[r1]             // actual pointer to a word (next word to execute)
 	mov r3,r1
 	add r3,#OFFSET_NAME
 	mov r2,r1
-	mov r1,r7
+	mov r1,r5
 	ldr r0,=callstackmsg
-	push {r7}
-	bl printf
-	pop {r7}
-_strl3:				
-	add r7,#4
-	ldr r6,=forthframestackptr
-	ldr r6,[r6]
-	cmp r7,r6
+	bl printf               // printf preserves r5
+
+_strl3:
+	add r5,#4
+	cmp r5,r7               // done when r5 > r7 (= RSP)
 	ble _stl1
+
+	pop {r5}
 	DONE
 	
 	
@@ -664,25 +640,16 @@ boot:
 //	.word EXECUTE
 	.int END
 
-_kpush:	
-        push {r1,r2,lr}
-        ldr r1, =vstackptr               // get the pointer to the bottom of the stack
-        ldr r2,[r1]
-        str r0,[r2]                     // store the value on the stack
-        sub r2,#INTLEN      // update the stack pointer
-        str r2,[r1]
-        pop {r1,r2,pc}
-
-
-_kpop:	
-	push {r1,lr}
-	ldr r1,=vstackptr
-	ldr r0,[r1]
-	add r0,#INTLEN
-	str r0,[r1]
-	ldr r0,[r1]
+// shared fault recovery: reset both Forth stacks and restart the interpreter.
+// does not wipe the dictionary, so previously defined words are preserved.
+_stack_restart:
+	ldr r6,=stacktop                // reset value stack pointer
+	ldr r7,=forthframestackend      // reset frame stack pointer
+	ldr r0,=cpustacktop             // reset ARM CPU stack to known state
 	ldr r0,[r0]
-	pop {r1,pc}
+	mov sp,r0
+	ldr r0,=bloop
+	mov pc,r0
 
 
 resetme:
@@ -695,18 +662,14 @@ resetme:
 	ldr r1,=firstword
 	str r0,[r1]
 
-	ldr r0,=wordbuf
-	ldr r1,=wordptr
-	str r0,[r1]
+	ldr r5,=boot           // initialise IP; forth() will start executing from here
 
 	ldr r0,=cpustacktop
 	mov r1,sp
 	str r1,[r0]
 
-	ldr r0,=forthframestackptr
-	ldr r1,=forthframestackend
-	str r1,[r0]
-	
+	ldr r6,=stacktop
+	ldr r7,=forthframestackend
 	pop {pc}
 
 
@@ -733,9 +696,6 @@ firstword:
 	.word link
 
 	.align 4
-vstackptr:
-	.word stacktop
-	
 stackbottom:
 	.rept 200
 	.int 0
@@ -746,9 +706,6 @@ endstack:
 	.align 4
 cpustacktop:
 	.int 0
-
-wordptr:
-	.word 0
 
 wordbuf:
 	.rept 32
@@ -773,9 +730,7 @@ forthframestackstart:
        .endr
 forthframestackend:
 	.word 0
-forthframestackptr:
-       .word forthframestackend
-	      
+
 buffer:
 	.rept 200
 	.byte 0

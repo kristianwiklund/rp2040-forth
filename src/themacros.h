@@ -5,35 +5,72 @@
 // utility macros to move things on and off the value stack
 // both operate on r0
 
-	.macro CFPUSH reg
-	push {r6,r7}
-	ldr r7,=forthframestackptr
-	ldr r6,[r7]
-	str \reg,[r6]
-	
-	sub r6,#4
-	str r6,[r7]
-	pop {r6,r7}
-	.endm
-
-	.macro CFPOP reg
-	push {r6,r7}
-	ldr r7,=forthframestackptr
-	ldr r6,[r7]	
-	add r6,#4
-	
-	ldr \reg,[r6]
-	str r6,[r7]
-	pop {r6,r7}
-	.endm
-
-	
+	// r6 = DSP (data stack pointer), grows down; r6 >= stacktop means empty
 	.macro KPOP
-	bl _kpop
+	push {r1}
+	ldr  r1,=stacktop
+	cmp  r6,r1
+	pop  {r1}
+	bhs  _kpop_uflow_\@
+	add  r6,#4
+	ldr  r0,[r6]
+	b    _kpop_done_\@
+_kpop_uflow_\@:
+	ldr  r0,=underflow_msg
+	bl   printf
+	bl   _stack_restart
+_kpop_done_\@:
 	.endm
-		
+
+	// r6 <= stackbottom means no room
 	.macro KPUSH
-	bl _kpush
+	push {r1}
+	ldr  r1,=stackbottom
+	cmp  r6,r1
+	pop  {r1}
+	bls  _kpush_oflow_\@
+	str  r0,[r6]
+	sub  r6,#4
+	b    _kpush_done_\@
+_kpush_oflow_\@:
+	ldr  r0,=overflow_msg
+	bl   printf
+	bl   _stack_restart
+_kpush_done_\@:
+	.endm
+
+	// r7 = RSP (return/frame stack pointer), grows down; r7 >= forthframestackend means empty
+	.macro CFPOP reg
+	push {r1}
+	ldr  r1,=forthframestackend
+	cmp  r7,r1
+	pop  {r1}
+	bhs  _cfpop_uflow_\@
+	add  r7,#4
+	ldr  \reg,[r7]
+	b    _cfpop_done_\@
+_cfpop_uflow_\@:
+	ldr  r0,=frame_underflow_msg
+	bl   printf
+	bl   _stack_restart
+_cfpop_done_\@:
+	.endm
+
+	// r7 <= forthframestackstart means full
+	.macro CFPUSH reg
+	push {r1}
+	ldr  r1,=forthframestackstart
+	cmp  r7,r1
+	pop  {r1}
+	bls  _cfpush_oflow_\@
+	str  \reg,[r7]
+	sub  r7,#4
+	b    _cfpush_done_\@
+_cfpush_oflow_\@:
+	ldr  r0,=frame_overflow_msg
+	bl   printf
+	bl   _stack_restart
+_cfpush_done_\@:
 	.endm
 
 	.macro DONE
@@ -48,6 +85,7 @@
 	#define FLAG_IMMEDIATE   0x2
 	#define FLAG_ONLYCOMPILE 0x4
 	#define FLAG_INVISIBLE   0x8 // not listed in WORDS listing
+	#define FLAG_FORTH_WORD  0x10 // word body is a Forth word list, not native asm
 	#define END 0x0
 	
 	.set link,0  // magically increasing linked list pointer
@@ -118,8 +156,8 @@ end_\label:
 //	blx main
 	
 	.macro FHEADER word, wordlen, flags, label
-	RAWHEADER "\word", \wordlen, \flags, \label
-	.int 0xabadbeef // signals that this is a forth-defined word
+	RAWHEADER "\word", \wordlen, (\flags | FLAG_FORTH_WORD), \label
+	// exec field now points directly at the first word pointer — no sentinel
 	.endm
 	
 #endif

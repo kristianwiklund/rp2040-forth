@@ -133,3 +133,10 @@ build
 *~
 #*#
 
+# Test results
+test/results/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
