@@ -1,0 +1,38 @@
+TESTS = [
+    {
+        "id": "10.1",
+        "section": "Dictionary",
+        "setup": [],
+        "input": "WORDS",
+        "expect": None,
+        "match": "any",
+        "note": "WORDS prints word list; non-deterministic content",
+    },
+    {
+        "id": "10.2",
+        "section": "Dictionary",
+        "setup": [],
+        "input": "SEE +",
+        "expect": None,
+        "match": "any",
+        "note": "SEE on native word; output is non-deterministic",
+    },
+    {
+        "id": "10.3",
+        "section": "Dictionary",
+        "setup": [],
+        "input": "SEE /",
+        "expect": "/MOD SWAP DROP",
+        "match": "contains",
+        "note": "SEE on Forth-defined word must contain its definition",
+    },
+    {
+        "id": "10.4",
+        "section": "Dictionary",
+        "setup": [],
+        "input": "SEE DP",
+        "expect": None,
+        "match": "any",
+        "note": "SEE on variable; output is non-deterministic",
+    },
+]

@@ -133,3 +133,6 @@ build
 *~
 #*#
 
+# Test results
+test/results/
+
