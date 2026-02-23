@@ -114,6 +114,46 @@ Test 12.4 promoted from permanent `skip` to `"match": "contains"`.
 
 ---
 
+## Sprint 5 — DO/LOOP (Feature)
+
+*First counted loop construct. Teaches return-stack discipline and compile-time
+back-patching. Mirrors the existing `BEGIN`/`UNTIL` pattern.*
+
+| # | Item | Implementation | Complexity |
+|---|------|----------------|------------|
+| 1 | `(DO)` runtime | Native word in `compile.h`: pops limit+index from value stack, pushes both to return stack (limit first, index on top) | Small |
+| 2 | `(LOOP)` runtime | Native word in `compile.h`: increments index at `[r7+4]`, compares with limit at `[r7+8]`; branches back or cleans up and exits | Small |
+| 3 | `I` / `J` | Native words: non-destructive peek at `[r7+4]` (current index) and `[r7+12]` (outer index, same-word nesting only) | Trivial |
+| 4 | `DO` compile word | `forthdefs.h`: compiles `(DO)`, leaves `HERE` on value stack (loop-body start address) | One-liner |
+| 5 | `LOOP` compile word | `forthdefs.h`: compiles `(LOOP)`, then `,` appends saved address — identical to `UNTIL` | One-liner |
+
+### Return stack layout during a loop
+
+`CFPUSH` stores at `[r7]` then decrements r7, so r7 sits one word below the top item.
+After `(DO)` pushes limit then index:
+
+```
+r7+4  = index   ← I reads here
+r7+8  = limit   ← (LOOP) compares here
+r7+12 = ...     ← J reads here (outer index for same-word nesting)
+```
+
+### Deferred scope
+
+| Word | Reason |
+|------|--------|
+| `?DO` | Needs a forward-branch placeholder for the zero-trip case |
+| `+LOOP` | Sign-aware boundary crossing; separate sprint |
+| `LEAVE` | Needs compile-time forward reference to loop end |
+| `J` across nested word calls | Only correct in same-word context; documented |
+
+### Tests added
+
+4 new tests in `test/cases/loops.py` (13.1–13.4): basic count, non-zero start,
+body count, and nested DO/LOOP.
+
+---
+
 ## Summary
 
 | Sprint | Bugs | Primary Goal |
@@ -123,3 +163,4 @@ Test 12.4 promoted from permanent `skip` to `"match": "contains"`.
 | **2b** | 006, 007, 001, 004 | Correct behavior + working debug tools |
 | **3**  | 005, 009 | Edge case polish |
 | **4**  | 013 | Divide-by-zero safety |
+| **5**  | —   | DO/LOOP/I/J (feature) |

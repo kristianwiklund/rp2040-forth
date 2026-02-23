@@ -1,0 +1,38 @@
+TESTS = [
+    {
+        "id": "13.1",
+        "section": "Loops",
+        "setup": [],
+        "input": ": T1 5 0 DO I . LOOP ; T1",
+        "expect": "0 1 2 3 4 ",
+        "match": "exact",
+        "note": "Basic DO/LOOP: counts 0 to 4 using I",
+    },
+    {
+        "id": "13.2",
+        "section": "Loops",
+        "setup": [],
+        "input": ": T2 3 1 DO I . LOOP ; T2",
+        "expect": "1 2 ",
+        "match": "exact",
+        "note": "DO/LOOP with non-zero start index",
+    },
+    {
+        "id": "13.3",
+        "section": "Loops",
+        "setup": [],
+        "input": ": T3 3 0 DO 42 . LOOP ; T3",
+        "expect": "42 42 42 ",
+        "match": "exact",
+        "note": "Loop body executes (limit - start) times",
+    },
+    {
+        "id": "13.4",
+        "section": "Loops",
+        "setup": [],
+        "input": ": T4 3 0 DO 3 0 DO I . LOOP LOOP ; T4",
+        "expect": "0 1 2 0 1 2 0 1 2 ",
+        "match": "exact",
+        "note": "Nested DO/LOOP: I reports inner index each time",
+    },
+]

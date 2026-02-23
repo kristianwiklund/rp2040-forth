@@ -45,9 +45,9 @@
 // .ascii ": <# PAD HLD ! 0 PAD C! HLD @ 1 - HLD ! ; "
 // .ascii ": # BASE @ /MOD SWAP DUP 9 > IF 7 + THEN 48 + HLD @ 1 - DUP HLD ! C! ; "
 
-// incomplete
-//.ascii ": ?DO POSTPONE >R POSTPONE >R HERE ; IMMEDIATE "
-//.ascii ": LOOP >R 1 + ; IMMEDIATE "
+// DO/LOOP compile-time words
+.ascii ": DO   LIT ' (DO)   , HERE ; IMMEDIATE "
+.ascii ": LOOP LIT ' (LOOP) , ,    ; IMMEDIATE "
 
 // math
 .ascii ": / /MOD SWAP DROP ; "

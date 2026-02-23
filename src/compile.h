@@ -251,6 +251,44 @@ _zb1:
 	ldr r5,[r5]     // IP = *IP (unconditional absolute jump)
 	DONE
 
+	// DO/LOOP runtime primitives
+
+	#: (DO) (limit index -- ) ; runtime for DO: push loop frame to return stack
+	HEADER "(DO)",4,FLAG_INVISIBLE,DO_RUN
+	KPOP			// r0 = index (TOS)
+	mov r1,r0		// save index; survives CFPUSH's internal push/pop of r1
+	KPOP			// r0 = limit
+	CFPUSH r0		// push limit onto return stack
+	CFPUSH r1		// push index onto return stack
+	DONE
+
+	#: (LOOP) ( -- ) ; runtime for LOOP: increment index, branch back or exit
+	HEADER "(LOOP)",6,FLAG_INVISIBLE,LOOP_RUN
+	ldr r0,[r7,#4]		// r0 = index (peek, no pop)
+	add r0,#1
+	str r0,[r7,#4]		// write back incremented index
+	ldr r1,[r7,#8]		// r1 = limit
+	cmp r0,r1
+	beq _loop_exit
+	ldr r5,[r5]		// take branch: IP = loop body start address
+	DONE
+_loop_exit:
+	add r7,#8		// pop index and limit (2 words, no bounds check needed)
+	add r5,#4		// advance IP past the branch-back address word
+	DONE
+
+	#: I ( -- n ) ; current loop index (top of return stack, non-destructive)
+	HEADER "I",1,0,IFETCH
+	ldr r0,[r7,#4]
+	KPUSH
+	DONE
+
+	#: J ( -- n ) ; outer loop index (same-word nesting only; r7+12)
+	HEADER "J",1,0,JFETCH
+	ldr r0,[r7,#12]
+	KPUSH
+	DONE
+
 	// locate a word and decompile it
 	HEADER "SEE",3,FLAG_IMMEDIATE,SEE // cannot be compiled
 	bl newwordhelper
