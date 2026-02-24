@@ -154,6 +154,62 @@ body count, and nested DO/LOOP.
 
 ---
 
+---
+
+## Sprint 6 — SD Storage Foundation
+
+**Status: blocked — SD library investigation complete, no viable implementation yet.**
+
+Three SD libraries were investigated and all fail under Arduino+Mbed on RP2040:
+
+| Library | Failure |
+|---------|---------|
+| `greiman/SdFat` | Unconditional `HAS_PIO_SDIO=1` in `SdFatConfig.h` pulls in bare Pico SDK types (`PIO`, `pio_sm_config`) that do not exist under Mbed. No flag workaround. |
+| Mbed `SDBlockDevice` | Header exists but `SDBlockDevice.cpp` and `.o` are absent from the Pico framework install — nothing to link against. |
+| `carlk3/no-OS-FatFS` | Targets bare Pico SDK; incompatible with Arduino+Mbed. |
+
+`FATFileSystem.o` **is** compiled into `RASPBERRY_PI_PICO/libs/libmbed.a`.
+Viable forward paths (see `docs/storage.md` for detail):
+
+- **Path A**: Source `SDBlockDevice.cpp` from mbed-os 6.15.x, add to project.
+- **Path B**: Switch to Earle Philhower core (`board_build.core = earlephilhower`);
+  only `main.cpp` needs touching; greiman/SdFat then works cleanly.
+
+`sd_backend.cpp` remains a stub returning -1; `/sd` is never registered.
+The VFS layer, RAM backend, ROM backend, INCLUDE, and ANS file words are all
+complete and tested against `/rom` without SD hardware.
+
+---
+
+## Sprint 7 — INCLUDE (already implemented)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | `INCLUDE` native word | Done — `src/filewords.h` |
+| 2 | `input_source_stack` in `.data` | Done — `src/forth.S` |
+| 3 | Extended `mygetchar()` reads from VFS fd stack | Done — `src/terminal.h` |
+
+**Verification:** `INCLUDE /sd/hello.fth` where `hello.fth` defines `: HI 72 EMIT ;`
+→ `HI` prints `H`.
+
+---
+
+## Sprint 8 — ANS File Words + Tests
+
+| # | Item | File |
+|---|------|------|
+| 1 | Tests 14.1–14.7 | `test/cases/storage.py` |
+| 2 | Wire into test runner | `test/cases/__init__.py` |
+
+Tests 14.1–14.5 exercise `OPEN-FILE`, `CLOSE-FILE`, `FILE-SIZE`, and `READ-FILE` against
+`/rom/boot.fth` (ROM backend; no SD card required). Tests 14.6–14.7 are marked `skip`
+until an SD card is available.
+
+**Note:** `S"` is compile-only; every storage test wraps its logic in a word definition
+to avoid interpretation-mode errors.
+
+---
+
 ## Summary
 
 | Sprint | Bugs | Primary Goal |
@@ -164,3 +220,6 @@ body count, and nested DO/LOOP.
 | **3**  | 005, 009 | Edge case polish |
 | **4**  | 013 | Divide-by-zero safety |
 | **5**  | —   | DO/LOOP/I/J (feature) |
+| **6**  | —   | SD backend (blocked — see sprint notes; stub in place) |
+| **7**  | —   | INCLUDE / input-source stack (already implemented) |
+| **8**  | —   | ANS file-word test suite (14.1–14.7) |

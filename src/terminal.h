@@ -305,38 +305,79 @@ _nww_l3:
 	
 mygetchar:
 	push {r1,r2,r3,r4,lr}
-_mgcretry:	
+
+_mgc_top:
+	// Check if a file source is active on the input source stack.
+	ldr r1,=input_source_sp
+	ldr r1,[r1]
+	cmp r1,#0
+	beq _mgc_nosource	// stack empty → use original inputptr/UART path
+
+	// Compute pointer to top entry: &input_source_stack[(sp-1)*8]
+	sub r1,#1
+	lsl r1,#3		// * 8 bytes per entry
+	ldr r2,=input_source_stack
+	add r2,r1		// r2 = &top entry
+	ldr r4,[r2,#4]		// r4 = vfs_fd
+
+	// vfs_read(fd, &ch_buf, 1) — allocate 1 byte on ARM stack
+	sub sp,#4
+	mov r0,r4		// r0 = fd
+	mov r1,sp		// r1 = &buf
+	mov r2,#1		// r2 = 1 byte
+	bl vfs_read		// r0 = bytes read (1) or 0=EOF or -1=error
+
+	cmp r0,#1
+	bne _mgc_file_eof
+
+	ldrb r0,[sp]		// r0 = character read
+	add sp,#4
+	pop {r1,r2,r3,r4,pc}
+
+_mgc_file_eof:
+	add sp,#4
+	// Close the exhausted fd and pop the source stack.
+	ldr r2,=input_source_sp
+	ldr r3,[r2]
+	sub r3,#1		// new depth
+	lsl r1,r3,#3
+	ldr r4,=input_source_stack
+	add r4,r1
+	ldr r0,[r4,#4]		// vfs_fd of the entry we're closing
+	bl vfs_close
+	ldr r2,=input_source_sp
+	ldr r3,[r2]
+	sub r3,#1
+	str r3,[r2]		// input_source_sp--
+	b _mgc_top		// retry with next source
+
+_mgc_nosource:
+	// Original logic: read from inputptr (forthdefs bootstrap or UART buffer).
 	ldr r1,=inputptr
 	ldr r2,[r1]		// pointer to the next character
 
 	ldr r3,=buffer		// check if the pointer is the start of
 	cmp r2,r3		// the buffer.
-	bne _mgc2		// no, we have something ongoing that we already work with
+	bne _mgc2		// no, have ongoing input to feed from
 
-	// buffer is empty, read something to the buffer
+	// buffer is empty, read a new line from the terminal
 	push {r1,r2}
-	bl readlinehelper	
+	bl readlinehelper
 	pop {r1,r2}
-_mgc2:	
+_mgc2:
 	ldrb r0,[r2]		// the next character
 
 	cmp r0,#0		// if it is not zero
 	bne _mgc1		// continue feeding from the buffer
 
-//	ldr r2,=buffer		// it is zero, set inputptr to the start
-//	str r2,[r1]		// of the buffer. This will force a terminal read on the next call.
-//	ldr r1,=0
-//	str r1,[r2]		// and set the buffer to zero to avoid double processing
-//	ldr r2,=sourceid
-	//	str r1,[r2]		// and set sourceid to 0 indicating that we run from the input buffer
 	bl restartinput
-	pop {r1,r2,r3,r4,pc}	// Then return the zero to the caller
-	
+	pop {r1,r2,r3,r4,pc}	// return 0 to the caller (end of current source)
+
 _mgc1:
-	add r2,#1		// then increase the pointer
-	str r2,[r1]		
-	
-	pop {r1,r2,r3,r4,pc}	// and return to the caller
+	add r2,#1		// advance the pointer
+	str r2,[r1]
+
+	pop {r1,r2,r3,r4,pc}	// return to the caller
 
 restartinput:	
 	push {r1,r2,lr}

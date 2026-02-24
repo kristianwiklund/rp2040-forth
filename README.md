@@ -6,6 +6,12 @@ Inspired by (obvious if one read the code) - but *not a port of* - [jonesforth](
 It will likely never be "complete" - *the primary purpose is as a vehicle for me to learn arm (+ rp2040= assembler*.
 
 
+## Claude vs myself
+
+The bulk of the functionality was written by me to learn ARM Assembler - or as a colleague put it, "you have written a compiler for a language nobody uses in a language nobody uses".
+Then this entire project was dormant for a few years, mostly due to reduced business travel, and I decided to use it to learn agentic coding.
+Claude has added the test suite, fixed some bugs, and the filesystem abstraction layer. 
+
 ## Bugs
 
 Yes, and lots of them.

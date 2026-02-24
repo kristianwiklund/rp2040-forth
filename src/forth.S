@@ -8,6 +8,8 @@
 	.global firstword, freemem, inputptr, buffer
 	.global WORD, SWAP,NOP
 	.global findhelper, get_code_offset, DUP, mode, wordbuf
+	.global input_source_sp, input_source_stack
+	.global forthdefs, forthdefs_end
 	.cpu cortex-m0
 
 	#ifdef NUCLEO_F103
@@ -184,8 +186,9 @@ get_code_offset:
 	// split to other files, but have to be included due to macro magic
 	#include "compile.h"
 	#include "terminal.h"
-	#include "output.h"	
+	#include "output.h"
 	#include "mathwords.h"
+	#include "filewords.h"
 	
 	HEADER "WORDS", 5, 0 , WORDS
 	ldr r0, =firstword // get the pointer to the first word in the list
@@ -720,10 +723,19 @@ execbuf:
 	.word 0
 	.word 0
 	
-inputptr:	
+inputptr:
 	.word forthdefs
 inputlen:
-       .int  0
+	.int  0
+
+	/* Input source stack for INCLUDE nesting.
+	   Each entry: { int32 source_id (1=file), int32 vfs_fd }
+	   input_source_sp = 0 means empty (bootstrap/UART path active). */
+input_source_sp:
+	.int 0
+input_source_stack:
+	.space 64	/* 8 entries × 8 bytes */
+
 forthframestackstart:
        .rept 100
        .word 0
@@ -742,8 +754,9 @@ endbuffer:
 	// read a word from stdin
 forthdefs:
 	#include "forthdefs.h"
-	
-	.align 4	
+
+forthdefs_end:
+	.align 4
 
 heapguard:
 	.int 0x13371337

@@ -89,8 +89,15 @@ Offsets: `OFFSET_FLAGS=4`, `OFFSET_LENGTH=8`, `OFFSET_EXEC=12`, `OFFSET_NAME=16`
 | `src/helpers.S` | Miscellaneous helpers (`alignhelper`, etc.) |
 | `src/forthdefs.h` | Forth words defined in ASCII Forth source, interpreted at boot (`ROT`, `SWAP`, `OVER`, `IF`/`THEN`/`ELSE`, `BEGIN`/`UNTIL`, `:`, `;`, etc.) |
 | `src/convert.S` | Number conversion helpers |
-| `src/main.cpp` | Arduino entry point — calls `forth()` from `setup()` |
+| `src/main.cpp` | Arduino entry point — calls `vfs_init()` then `forth()` from `setup()` |
 | `src/hardware/` | Minimal RP2040 register headers |
+| `src/filewords.h` | File I/O Forth words: `INCLUDE`, `OPEN-FILE`, `CLOSE-FILE`, `READ-FILE`, `WRITE-FILE`, `FILE-SIZE` |
+| `src/storage/vfs.h` | VFS C interface: `vfs_ops_t`, `vfs_register`, `vfs_open/close/read/write/seek/size/unlink` |
+| `src/storage/vfs.c` | VFS mount registry and global fd-table dispatch |
+| `src/storage/sd_backend.cpp/.h` | SD card backend stub (returns -1; see docs/storage.md for viable upgrade paths); exposes `sd_ops` and `sd_backend_init()` |
+| `src/storage/ram_backend.c/.h` | Named SRAM buffer slots; exposes `ram_ops` and `ram_create()` |
+| `src/storage/rom_backend.c/.h` | Read-only rodata blobs (`/rom/boot.fth`); exposes `rom_ops` |
+| `src/storage/lfs_backend.h` | LittleFS stub — all-NULL `lfs_ops`; no `.c` yet |
 
 ### Boot Sequence
 
