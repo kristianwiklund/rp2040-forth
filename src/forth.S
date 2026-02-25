@@ -526,7 +526,10 @@ interpreter:
 
 	// step 1, is to empty the input buffer
 	bl restartinput
-	
+
+	ldr r0,=mode	// reset to interpret mode so the next word starts clean
+	ldr r1,=0
+	str r1,[r0]
 	DONE
 
 	

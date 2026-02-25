@@ -90,7 +90,7 @@
 
 // ." have two different behaviors. If in exec mode, it prints the string, if in compile mode, it compiles code to print the string
 .ascii ": .\" STATE 0= IF BEGIN KEY DUP DUP 34 <> IF EMIT ELSE DROP THEN 34 = UNTIL " // this is the interpreting behavior
-.ascii " ELSE S\" LIT TYPE , "   // and this is the compiling behavior
+.ascii " ELSE POSTPONE S\" LIT TYPE , "   // and this is the compiling behavior
 .ascii "THEN ; IMMEDIATE " // word end
 
 // comments

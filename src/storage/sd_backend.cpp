@@ -19,12 +19,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// ── Hardware ──────────────────────────────────────────────────────────────────
-// SDBlockDevice(mosi, miso, sck, cs, hz)
-static SDBlockDevice      sd_dev((PinName)7, (PinName)4, (PinName)6, (PinName)21,
-                                  12500000);
-static mbed::FATFileSystem sd_fs("sd");   // mounts as /sd/ in POSIX namespace
-
 // ── State ─────────────────────────────────────────────────────────────────────
 static FILE *open_files[VFS_MAX_FILES];
 
@@ -110,6 +104,14 @@ extern "C" const vfs_ops_t sd_ops = {
 
 extern "C" int sd_backend_init(void)
 {
+    // Function-local statics: constructed on first call (from setup(), after
+    // the RTOS is running), not at global-init time.  Moving them here fixes
+    // the SIOF crash where FATFileSystem("sd")'s constructor tried to acquire
+    // filehandle_mutex before the retarget layer was ready.
+    static SDBlockDevice      sd_dev((PinName)7, (PinName)4, (PinName)6,
+                                     (PinName)21, 12500000);
+    static mbed::FATFileSystem sd_fs("sd");
+
     memset(open_files, 0, sizeof(open_files));
     int err = sd_dev.init();
     if (err) return err;

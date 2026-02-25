@@ -51,6 +51,11 @@ void setup() {
     vfs_register("/rom", &rom_ops);
     ram_backend_init();
     vfs_register("/ram", &ram_ops);
+
+    // ##### marks the start and stop of the area that causes the crash
+    // #####
+    // testing points at sd_backend_init being the root cause of the crash
+    
     if (sd_backend_init() == 0) {
         vfs_register("/sd", &sd_ops);
         printf("SD mounted\n");
@@ -58,7 +63,10 @@ void setup() {
         printf("SD mount failed (no card or SPI wiring issue)\n");
     }
 
-#ifdef SPRINT6_VERIFY
+    // #####    
+    
+
+#ifdef STOCK_SPRINT6_VERIFY
     {   /* Put test.txt on the SD card before booting. */
         int fd = vfs_open("/sd/test.txt", VFS_O_READ);
         if (fd) {

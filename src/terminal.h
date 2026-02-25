@@ -13,7 +13,7 @@
 	
 	
 	
-	HEADER "S\"",2,0,SQUOTE
+	HEADER "S\"",2,FLAG_IMMEDIATE,SQUOTE
 	ldr r0,=SKIPSTRING
 	KPUSH
 	bl commahelper
@@ -30,9 +30,11 @@
 	ldr r1,=freemem  // where to write the string
 	ldr r1,[r1]
 	push {r1}        // this is where the string is. This goes to the stack after we are done
-	
-_sq2:	
-	bl mygetchar 
+
+//	bl mygetchar	// consume the mandatory space delimiter (not part of the string)
+
+_sq2:
+	bl mygetchar
 	strb r0,[r1]     // store it in the memory, and increase the pointer
 	cmp r0,#'\"'     // read until we get a "
 	beq _sq1
