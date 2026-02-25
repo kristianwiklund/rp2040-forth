@@ -1,48 +1,57 @@
 /*
- * SD card backend — Mbed SDBlockDevice (mbed-os 6.15.1) + FATFileSystem.
+ * SD card backend — carlk3 FatFs_SPI (Apache-2.0 + BSD FatFS)
  *
  * Board: Olimex RP2040-PICO-PC rev D
  *   MOSI=GP7  MISO=GP4  CLK=GP6  CS=GP21
  *
- * SDBlockDevice source lives in the sibling repo ../mbed-sdblockdevice
- * (Apache-2.0, extracted from mbed-os 6.15.1).
- * FATFileSystem is compiled into RASPBERRY_PI_PICO/libs/libmbed.a.
+ * Hardware config is in sd_hw_config.c.  This file implements the VFS ops
+ * using the FatFS f_open/f_read/… API; the vfs_ops_t interface is unchanged.
  *
- * After sd_backend_init() succeeds, standard fopen("/sd/path", mode) routes
- * through FATFileSystem automatically via Mbed's filesystem path dispatch.
+ * Path convention: VFS strips the "/sd" prefix and leading "/" before calling
+ * the backend, so sd_open receives "test.txt", not "/sd/test.txt".
+ * We prepend "0:/" for FatFS.
  */
 
-#include "mbed_config.h"        /* MBED_CONF_* macros — must precede any Mbed header */
 #include "sd_backend.h"
-#include "SDBlockDevice.h"
-#include <fat/FATFileSystem.h>
+#include "hw_config.h"  /* sd_get_by_num, sd_card_t */
+#include "ff.h"         /* FatFS API */
 #include <stdio.h>
 #include <string.h>
 
 // ── State ─────────────────────────────────────────────────────────────────────
-static FILE *open_files[VFS_MAX_FILES];
+
+static FIL open_files[VFS_MAX_FILES];
+static bool file_open[VFS_MAX_FILES];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-static const char *vfs_flags_to_mode(int flags)
+
+static BYTE vfs_flags_to_fatfs_mode(int flags)
 {
     int rw = flags & (VFS_O_READ | VFS_O_WRITE);
     if (rw == (VFS_O_READ | VFS_O_WRITE))
-        return (flags & VFS_O_TRUNC) ? "w+b" : "r+b";
+        return (flags & VFS_O_TRUNC) ? FA_READ | FA_WRITE | FA_CREATE_ALWAYS
+                                     : FA_READ | FA_WRITE | FA_OPEN_EXISTING;
     if (flags & VFS_O_WRITE)
-        return (flags & VFS_O_TRUNC) ? "wb" : "ab";
-    return "rb";
+        return (flags & VFS_O_TRUNC) ? FA_WRITE | FA_CREATE_ALWAYS
+                                     : FA_WRITE | FA_OPEN_APPEND;
+    return FA_READ;
 }
 
 // ── VFS ops ───────────────────────────────────────────────────────────────────
+
 static int sd_open(const char *path, int flags)
 {
-    char full[64];
-    snprintf(full, sizeof(full), "/sd/%s", path);
+    char full[72];
+    snprintf(full, sizeof(full), "0:/%s", path);
 
     for (int i = 0; i < VFS_MAX_FILES; i++) {
-        if (!open_files[i]) {
-            open_files[i] = fopen(full, vfs_flags_to_mode(flags));
-            if (open_files[i]) return i;
+        if (!file_open[i]) {
+            FRESULT rc = f_open(&open_files[i], full,
+                                vfs_flags_to_fatfs_mode(flags));
+            if (rc == FR_OK) {
+                file_open[i] = true;
+                return i;
+            }
             return -1;
         }
     }
@@ -51,47 +60,58 @@ static int sd_open(const char *path, int flags)
 
 static void sd_close(int fd)
 {
-    if (fd < 0 || fd >= VFS_MAX_FILES || !open_files[fd]) return;
-    fclose(open_files[fd]);
-    open_files[fd] = NULL;
+    if (fd < 0 || fd >= VFS_MAX_FILES || !file_open[fd]) return;
+    f_close(&open_files[fd]);
+    file_open[fd] = false;
 }
 
 static int sd_read(int fd, void *buf, int len)
 {
-    if (fd < 0 || fd >= VFS_MAX_FILES || !open_files[fd]) return -1;
-    return (int)fread(buf, 1, (size_t)len, open_files[fd]);
+    if (fd < 0 || fd >= VFS_MAX_FILES || !file_open[fd]) return -1;
+    UINT br = 0;
+    FRESULT rc = f_read(&open_files[fd], buf, (UINT)len, &br);
+    if (rc != FR_OK) return -1;
+    return (int)br;
 }
 
 static int sd_write(int fd, const void *buf, int len)
 {
-    if (fd < 0 || fd >= VFS_MAX_FILES || !open_files[fd]) return -1;
-    return (int)fwrite(buf, 1, (size_t)len, open_files[fd]);
+    if (fd < 0 || fd >= VFS_MAX_FILES || !file_open[fd]) return -1;
+    UINT bw = 0;
+    FRESULT rc = f_write(&open_files[fd], buf, (UINT)len, &bw);
+    if (rc != FR_OK) return -1;
+    return (int)bw;
 }
 
 static int sd_seek(int fd, int offset, int whence)
 {
-    if (fd < 0 || fd >= VFS_MAX_FILES || !open_files[fd]) return -1;
-    return fseek(open_files[fd], (long)offset, whence);
+    if (fd < 0 || fd >= VFS_MAX_FILES || !file_open[fd]) return -1;
+    FIL *fp = &open_files[fd];
+    FSIZE_t target;
+    switch (whence) {
+        case 0: target = (FSIZE_t)offset; break;                        /* SET */
+        case 1: target = f_tell(fp) + (FSIZE_t)offset; break;           /* CUR */
+        case 2: target = f_size(fp) + (FSIZE_t)offset; break;           /* END */
+        default: return -1;
+    }
+    return (f_lseek(fp, target) == FR_OK) ? 0 : -1;
 }
 
 static int sd_size(int fd)
 {
-    if (fd < 0 || fd >= VFS_MAX_FILES || !open_files[fd]) return -1;
-    long cur  = ftell(open_files[fd]);
-    fseek(open_files[fd], 0, SEEK_END);
-    long size = ftell(open_files[fd]);
-    fseek(open_files[fd], cur, SEEK_SET);
-    return (int)size;
+    if (fd < 0 || fd >= VFS_MAX_FILES || !file_open[fd]) return -1;
+    return (int)f_size(&open_files[fd]);
 }
 
 static int sd_unlink(const char *path)
 {
-    char full[64];
-    snprintf(full, sizeof(full), "/sd/%s", path);
-    return remove(full);
+    char full[72];
+    snprintf(full, sizeof(full), "0:/%s", path);
+    return (f_unlink(full) == FR_OK) ? 0 : -1;
 }
 
 // ── Public interface ──────────────────────────────────────────────────────────
+
 extern "C" const vfs_ops_t sd_ops = {
     .open   = sd_open,
     .close  = sd_close,
@@ -104,16 +124,11 @@ extern "C" const vfs_ops_t sd_ops = {
 
 extern "C" int sd_backend_init(void)
 {
-    // Function-local statics: constructed on first call (from setup(), after
-    // the RTOS is running), not at global-init time.  Moving them here fixes
-    // the SIOF crash where FATFileSystem("sd")'s constructor tried to acquire
-    // filehandle_mutex before the retarget layer was ready.
-    static SDBlockDevice      sd_dev((PinName)7, (PinName)4, (PinName)6,
-                                     (PinName)21, 12500000);
-    static mbed::FATFileSystem sd_fs("sd");
+    memset(file_open, 0, sizeof(file_open));
 
-    memset(open_files, 0, sizeof(open_files));
-    int err = sd_dev.init();
-    if (err) return err;
-    return sd_fs.mount(&sd_dev);   /* 0 = success, negative = Mbed error */
+    sd_card_t *sd = sd_get_by_num(0);
+    if (!sd) return -1;
+
+    FRESULT rc = f_mount(&sd->fatfs, "0:", 1);  /* 1 = mount immediately */
+    return (rc == FR_OK) ? 0 : -1;
 }
