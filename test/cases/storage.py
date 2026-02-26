@@ -31,14 +31,14 @@ TESTS = [
     },
     {
         "id": "14.6", "section": "Storage", "setup": [],
-        "input": "",
-        "expect": None, "match": "skip",
-        "note": "WRITE-FILE round-trip (skip: requires /sd card)",
+        "input": ': T14F S" /sd/test.txt" 0 3 OPEN-FILE DROP DUP S" hello" ROT WRITE-FILE DROP CLOSE-FILE DROP S" /sd/test.txt" 0 1 OPEN-FILE DROP DUP HERE 5 ROT READ-FILE DROP SWAP CLOSE-FILE DROP . ; T14F',
+        "expect": "5 ", "match": "exact",
+        "note": "WRITE-FILE round-trip: write 5 bytes, read back 5",
     },
     {
         "id": "14.7", "section": "Storage", "setup": [],
-        "input": "",
-        "expect": None, "match": "skip",
-        "note": "INCLUDE /sd/hello.fth (skip: requires SD card)",
+        "input": ': T14G S" /sd/hi.fth" 0 3 OPEN-FILE DROP DUP S" : HI 72 EMIT ;" ROT WRITE-FILE DROP CLOSE-FILE DROP ; T14G INCLUDE /sd/hi.fth HI',
+        "expect": "H", "match": "exact",
+        "note": "INCLUDE /sd/hi.fth: write word definition, include, call it",
     },
 ]

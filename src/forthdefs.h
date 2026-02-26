@@ -102,7 +102,7 @@
 // recurse causes a hard crash in the find loop after the change to platformio
 // focusing on integer output words atm, commenting out this
 
-// .ascii ": FAC ( factorial x -- x! ) RECURSE DUP 0> IF DUP 1- FAC * ELSE DROP 1 THEN ; "
+.ascii ": FAC DUP 0> IF DUP 1- FAC * ELSE DROP 1 THEN ; "
 .ascii ": B IF 1000 . ELSE 2000 . THEN ; "
 .asciz ": A 10 BEGIN DUP . 1 - DUP 0 < UNTIL ; "
 
