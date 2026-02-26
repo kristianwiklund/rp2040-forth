@@ -256,7 +256,50 @@ Changes required:
 
 ---
 
-## #6 — Add stack-effect comments to all assembler words
+## #6 — Remove Arduino/RPi library dependencies (move towards bare metal)
+
+**Problem:** The firmware currently depends on the Arduino framework (earlephilhower
+arduino-pico core) purely for:
+
+| Dependency | Location | Purpose |
+|---|---|---|
+| `Arduino.h` | `main.cpp` | Pulls in `Serial`, `delay()` |
+| `Serial.write()` | `main.cpp` — `putchar`/`printf` | USB CDC character output |
+| `Serial.available()` / `Serial.read()` | `main.cpp` — `getchar` | USB CDC character input |
+| `Serial.begin(115200)` / `while (!Serial)` | `main.cpp` — `setup()` | USB CDC init / connect wait |
+| `delay(1)` | `main.cpp` — `getchar` busy-wait | Yield while waiting for input |
+
+The rest of the codebase (`forth.S` and friends) is already bare-metal ARM assembly
+that only needs `getchar`, `putchar`, `printf`, and `flushinput` symbols to link against.
+
+**Goal:** Replace the Arduino framework layer with pico-sdk calls so the project can be
+built with `cmake` / `pico-sdk` directly, without PlatformIO or the Arduino core.
+
+**Proposed bare-metal replacements:**
+
+| Current | Bare-metal replacement |
+|---|---|
+| `Serial.write(c)` | TinyUSB CDC `tud_cdc_write_char(c)` + `tud_cdc_write_flush()`, or `stdio_usb` via `putchar_raw()` |
+| `Serial.available()` | `tud_cdc_available()` |
+| `Serial.read()` | `tud_cdc_read_char()` |
+| `Serial.begin()` + `while (!Serial)` | `tusb_init()` + `tud_task()` loop until `tud_cdc_connected()` |
+| `delay(1)` in `getchar` busy-wait | `tight_loop_contents()` or `__wfe()` |
+| `setup()`/`loop()` Arduino entry | `int main()` calling `vfs_init()` then `forth()` |
+
+Alternatively: use the pico-sdk's higher-level `stdio_usb` driver and call
+`stdio_usb_init()` explicitly. This gives a working `getchar`/`putchar`/`printf` via
+the standard pico-sdk stdio layer with proper USB flushing, eliminating the need for
+the current manual printf override entirely.
+
+**Scope:** `src/main.cpp` (rewrite as `src/main.c` or keep `.cpp`), `platformio.ini`
+(or replace with `CMakeLists.txt`). The assembly sources are unaffected.
+
+**Sequencing:** Low-risk if done in isolation. The existing `CMakeLists.txt` in the repo
+root is a starting point for the cmake path.
+
+---
+
+## #7 — Add stack-effect comments to all assembler words
 
 **Problem:** Most native words in `forth.S`, `compile.h`, `terminal.h`, `output.h`, and
 `mathwords.h` lack `( before -- after )` stack-effect comments. This makes it hard to
