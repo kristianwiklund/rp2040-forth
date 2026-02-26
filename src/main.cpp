@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <stdarg.h>
 
 #include "storage/vfs.h"
 #include "storage/sd_backend.h"
@@ -8,7 +9,9 @@
 extern "C" void forth();
 extern "C" void flushinput();
 
-// getchar/putchar used by the assembly words via bl getchar / bl putchar.
+// getchar/putchar/printf used by the assembly words via bl getchar / bl putchar / bl printf.
+// All three route through Serial.write so output goes to the same USB CDC stream
+// without relying on the pico-sdk stdio layer (which buffers output until newline).
 extern "C" int getchar(void) {
     while (!Serial.available()) { delay(1); }
     return Serial.read();
@@ -17,6 +20,16 @@ extern "C" int getchar(void) {
 extern "C" int putchar(int c) {
     Serial.write((uint8_t)c);
     return c;
+}
+
+extern "C" int printf(const char *fmt, ...) {
+    char buf[512];
+    va_list args;
+    va_start(args, fmt);
+    int n = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    if (n > 0) Serial.write((const uint8_t *)buf, (size_t)n);
+    return n;
 }
 
 void setup() {
