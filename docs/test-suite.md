@@ -8,8 +8,8 @@ before `ok`.
 Words defined at boot (from `src/forthdefs.h`) are available: `A`, `B`, `DOUBLE`
 are **not** pre-defined — define them in the session as shown.
 
-**Known failing words — do not test:** `FAC`, `RECURSE` (hard crash, see
-`bugs/002`). `TYPE` with strings containing `%` will also crash (see `bugs/003`).
+**Previously failing words, now fixed:** `RECURSE` (bugs/002, fixed Sprint 9),
+`TYPE` with `%` characters (bugs/003, fixed Sprint 9).
 
 ---
 
@@ -111,7 +111,7 @@ correct today but the implementation is fragile.
 ## 5. Base / Number Representation
 
 After switching to HEX, switch back to DEC before further tests.
-Hex input must be **lowercase** — uppercase A–F are rejected (see `bugs/005`).
+Hex input accepts both uppercase and lowercase digits (bugs/005 fixed in Sprint 3).
 
 | Input | Expected output | Notes |
 |-------|----------------|-------|
@@ -119,7 +119,7 @@ Hex input must be **lowercase** — uppercase A–F are rejected (see `bugs/005`
 | `HEX 1a . DEC` | `26 ` | Hex input parsed as 26 decimal |
 | `BASE @ .` | `10 ` | BASE holds the current radix |
 | `HEX 0 . DEC` | `0 ` | Zero in hex |
-| `HEX 1A . DEC` | *(error)* | Uppercase rejected — see `bugs/005` |
+| `HEX 1A . DEC` | `26 ` | Uppercase accepted since Sprint 3 |
 
 ---
 

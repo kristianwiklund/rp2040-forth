@@ -45,8 +45,9 @@ _sq1:
 	ldr r0,=0    // NULL terminate the string
 	strb r0,[r1]
 
-	// align and store new address
-	add r1,#3
+	// align freemem to next 4-byte boundary *past* the null byte
+	// (+3 would land on the null itself when strlen is a multiple of 4)
+	add r1,#4
 	lsr r1,#2
 	ldr r3,=4
 	mul r1,r3

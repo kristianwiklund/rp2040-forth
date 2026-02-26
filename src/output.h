@@ -38,12 +38,18 @@ _hex:
 	# print a string from ascii pointed to by an item on the stack
 	HEADER "TYPE",4,0,TYPE
 	KPOP
-	mov r1,r0           // r1 = string address (second printf arg)
-	ldr r0,=_type_fmt   // r0 = "%s" format string
-	bl printf
+	push {r4}           // save r4; callee-saved so putchar preserves it
+	mov r4,r0           // r4 = current pointer
+_type_loop:
+	ldrb r0,[r4]        // r0 = *ptr
+	cmp r0,#0
+	beq _type_done
+	bl putchar
+	add r4,#1
+	b _type_loop
+_type_done:
+	pop {r4}
 	DONE
-_type_fmt: .asciz "%s"
-	.align 2
 	
 	FHEADER "BASE",4,0,BASE
 	.int LIT,base

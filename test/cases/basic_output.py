@@ -62,4 +62,22 @@ TESTS = [
         "match": "exact",
         "note": "SPACE = 32 EMIT",
     },
+    {
+        "id": "1.8",
+        "section": "Basic Output",
+        "setup": [': T_TYPE S" Hello" TYPE ;'],
+        "input": "T_TYPE",
+        "expect": "Hello",
+        "match": "exact",
+        "note": "TYPE prints a simple string",
+    },
+    {
+        "id": "1.9",
+        "section": "Basic Output",
+        "setup": [': T_PCT S" 50% done" TYPE ;'],
+        "input": "T_PCT",
+        "expect": "50% done",
+        "match": "exact",
+        "note": "TYPE safe with % — was a crash before the fix",
+    },
 ]
