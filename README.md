@@ -17,6 +17,9 @@ Claude has added the test suite, fixed some bugs, and the filesystem abstraction
 Yes, and lots of them.
 
 Notably, there is no error handling at all. This is by design (as in - I haven't gotten around to fixing it yet). 
+This is likely not 100% true anymore, I asked Claude to add something... so now we do not get random deaths if we run out of stack, for example.
+Typical example of a boring feature I wouldn't have bothered with.
+
 Use an SWD adapter (picoprobe, jlink, ...) with gdb to avoid having to pull the plug all the time. You want one anyway, it makes life easier.
 
 ## STM32F103RBT6 (STM32F103RB nucleo) "port"
