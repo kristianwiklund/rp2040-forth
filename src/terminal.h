@@ -45,6 +45,8 @@ _sq1:
 	ldr r0,=0    // NULL terminate the string
 	strb r0,[r1]
 
+	push {r1}   // save null-byte position for strlen computation
+
 	// align freemem to next 4-byte boundary *past* the null byte
 	// (+3 would land on the null itself when strlen is a multiple of 4)
 	add r1,#4
@@ -54,8 +56,10 @@ _sq1:
 	ldr r0,=freemem
 	str r1,[r0]
 
-	pop {r4}   // retrieve the address to the string
-	pop {r0}   // update the jump
+	pop {r2}   // r2 = null-byte position
+	pop {r4}   // r4 = string start address
+	pop {r0}   // r0 = placeholder address (branch target)
+	sub r2,r4  // r2 = strlen = null_pos - string_start
 
 	str r1,[r0]
 
@@ -65,6 +69,15 @@ _sq1:
 	bl commahelper
 
 	mov r0,r4
+	KPUSH
+	bl commahelper
+
+	// compile strlen as literal (ANS: S" pushes c-addr u)
+	push {r2}          // r2 is caller-saved; protect across bl commahelper
+	ldr r0,=LIT
+	KPUSH
+	bl commahelper
+	pop {r0}           // r0 = strlen
 	KPUSH
 	bl commahelper
 

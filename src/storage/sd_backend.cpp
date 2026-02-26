@@ -29,8 +29,7 @@ static BYTE vfs_flags_to_fatfs_mode(int flags)
 {
     int rw = flags & (VFS_O_READ | VFS_O_WRITE);
     if (rw == (VFS_O_READ | VFS_O_WRITE))
-        return (flags & VFS_O_TRUNC) ? FA_READ | FA_WRITE | FA_CREATE_ALWAYS
-                                     : FA_READ | FA_WRITE | FA_OPEN_EXISTING;
+        return FA_READ | FA_WRITE | FA_CREATE_ALWAYS;  /* always create/truncate for R/W */
     if (flags & VFS_O_WRITE)
         return (flags & VFS_O_TRUNC) ? FA_WRITE | FA_CREATE_ALWAYS
                                      : FA_WRITE | FA_OPEN_APPEND;

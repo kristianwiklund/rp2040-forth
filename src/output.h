@@ -35,20 +35,23 @@ _hex:
 	bl putchar
 	DONE
 
-	# print a string from ascii pointed to by an item on the stack
+	// ANS TYPE ( c-addr u -- ) ; print u characters from c-addr
 	HEADER "TYPE",4,0,TYPE
-	KPOP
-	push {r4}           // save r4; callee-saved so putchar preserves it
+	push {r4,r5}        // save r4 and Forth IP (r5 used as counter)
+	KPOP                // r0 = u (length, TOS)
+	mov r5,r0           // r5 = remaining count
+	KPOP                // r0 = c-addr
 	mov r4,r0           // r4 = current pointer
 _type_loop:
-	ldrb r0,[r4]        // r0 = *ptr
-	cmp r0,#0
+	cmp r5,#0
 	beq _type_done
-	bl putchar
+	ldrb r0,[r4]
+	bl putchar          // r4,r5 preserved (callee-saved)
 	add r4,#1
+	sub r5,#1
 	b _type_loop
 _type_done:
-	pop {r4}
+	pop {r4,r5}         // restore r4 and Forth IP
 	DONE
 	
 	FHEADER "BASE",4,0,BASE
