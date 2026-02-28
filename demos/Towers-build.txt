@@ -1,0 +1,202 @@
+EDITOR
+40 CLEAR
+
+
+0 NEW
+( Towers of Hanoi game )
+( by Ricardo F. Lopes - 2006 for Jupiter ACE )
+( Ported to Microtan by Barry Graham - 2019 )
+( Use keys 1, 2 and 3 to play )
+ 
+0 VARIABLE MOV#  ( Move count )
+: MOV+1 ( Increment move count )  
+MOV# @ 1+ MOV# ! ;
+ 
+0 VARIABLE T 24 ALLOT  ( Towers array: 3 poles, 8 lines )
+: T>     ( pole line -- c-adr )  
+3 * + T + ;
+: RING@  ( pole line -- ring  )  
+T> C@ ;
+: RING!  ( ring pole line --  )  
+T> C! ; -->
+
+FLUSH
+
+
+
+41 CLEAR
+
+
+
+0 NEW
+: INIT ( Initialize game )
+ 0 MOV# !     ( Reset move count)
+ 8 0          ( Set rings)
+ DO
+  7 I -       ( ring size)
+  0 I RING!   ( Put all rings in pole 1)
+  0 1 I RING! ( empty pole 2)
+  0 2 I RING! ( empty pole 3)
+ LOOP
+;
+-->
+
+
+FLUSH
+
+
+42 CLEAR
+
+
+0 NEW
+: .FRAME ( draw poles )
+ GON
+ 3 0             ( 3 poles)
+ DO
+  I 1 + 16 *         ( calulate x for this pole)
+  16 0           ( 8 doucble rows high)
+  DO
+   DUP 49 I - SWAP GSET ( Draw the pole) 
+  LOOP DROP
+ LOOP
+ 64 0            ( bottom line)
+ DO
+  50 I GSET        ( draw line)
+ LOOP
+ GOFF COFF 13 CLINE ."         1       2       3" ( pole lbls)
+; -->
+
+FLUSH
+
+
+43 CLEAR
+
+
+0 NEW
+: .RING ( ring line pole -- , Draw a ring)
+ GON                ( Graphics on )
+ 1+ 16 * 3 PICK -   ( x = pole+1 * 16 - ring)
+ SWAP 2 * 48 SWAP - ( y = 48 - line*2       )
+ ROT 2 * 1+ 0       ( ringsize = ring*2 + 1 )
+ DO                 ( Plot ring)
+  OVER I + OVER
+  SWAP GSET
+ LOOP
+ DROP DROP
+ GOFF             ( Graphics off )
+;
+-->
+
+FLUSH
+
+
+44 CLEAR
+
+
+0 NEW
+0 VARIABLE POLE
+: SHOW ( Draw everything)
+ GCLS                 ( Set wholE screen to grpahics and clear)
+ .FRAME
+ COFF 14 CLINE ." Moves: " MOV# @ . ( Show moves on line 14)
+ 3 0                  ( Three Poles)
+ DO
+  I POLE !            ( Pole no )
+  7 0                 ( Seven Lines)
+  DO
+   POLE @ I RING@ -DUP
+   IF                 ( Is there a ring?)
+    I POLE @ .RING    ( Draw the ring)
+   THEN
+  LOOP
+ LOOP ; -->
+
+FLUSH
+
+
+45 CLEAR
+
+
+0 NEW
+: TOP> ( pole -- pole line Find free line over rings in pole)
+ 0                  ( dummy previous line)
+ 8 0                ( check 8 lines )
+ DO
+  DROP              ( discard previous line)
+  I OVER OVER RING@ ( Get ring in current line)
+  0=
+  IF                ( Free line? Done )
+   LEAVE
+  THEN
+ LOOP
+;
+-->
+
+FLUSH
+
+
+46 CLEAR
+
+
+0 NEW
+: END?  ( -- flag , Check for end of game)
+ 0             ( sum = 0)
+ 7 0           ( 7 lines)
+ DO
+  2 I RING@ +  ( Sum all rings in pole 3)
+ LOOP
+ 28 =          ( Game over if sum of rings = 28)
+;
+-->
+
+FLUSH
+
+
+47 CLEAR
+
+
+0 NEW
+: MOV ( from to -- , Move a ring from one pole to another)
+ OVER TOP> -DUP
+ IF         ( Is there a ring in the source?)
+  1 - RING@  ( Get top ring from source )
+  OVER TOP> -DUP
+  IF                   ( Destination not empty?)
+   1 - RING@           ( Yes, get top ring from destination)
+  ELSE                 ( The destination is empty..)
+   DROP 8              ( ..assume top destination ring = 8)
+  THEN OVER >          ( Smaller ring over bigger?)
+  IF SWAP TOP> RING!     ( Place ring in the destination pole)
+   0 SWAP TOP> 1 - RING!  ( Remove ring from source)
+   MOV+1               ( Count move)
+  ELSE DROP DROP DROP THEN ( Invalid move, do nothing)
+ ELSE DROP DROP DROP  ( No rings in source, do nothing)
+ THEN ; --> 
+
+
+FLUSH
+
+
+48 CLEAR
+
+
+0 NEW
+: KEY?  ( -- n , Get user input)
+  KEY   ( Wait for key)
+  48 - 1 MAX 3 MIN   ( convert key 1-3 to number 1-3)
+;
+ 
+: HANOI ( Main word, execute it to play)
+ INIT                          ( Init variables)
+ SHOW                          ( Draw screen)
+ BEGIN                         ( Main game loop)
+  ." From? " KEY? DUP . 1 -    ( Get user "from" input)
+  ."   To? " KEY? DUP . 1 -    ( Get user "to" input)
+  MOV                          ( Move ring as commanded)
+  SHOW                         ( Update screen)
+  END?                         ( Check for success)
+ UNTIL
+; ;S
+
+FLUSH
+
